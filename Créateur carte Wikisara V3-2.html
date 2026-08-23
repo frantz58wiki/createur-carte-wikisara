@@ -1,0 +1,6231 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Éditeur de lignes GPS</title>
+
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+<style>
+.small-line-point {
+    background: transparent !important;
+    border: 0 !important;
+}
+
+.small-line-point span {
+    display: block;
+    width: 6px;
+    height: 6px;
+    margin: 2px;
+    border: 1px solid #000000;
+    border-radius: 50%;
+    background: #ffffff;
+    box-sizing: border-box;
+}
+
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+}
+
+#map {
+    height: 60vh;
+    width: 100%;
+}
+
+#panel {
+    padding: 10px;
+    background: #ffffff;
+}
+
+textarea {
+    width: 100%;
+    height: 160px;
+    box-sizing: border-box;
+    resize: vertical;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+button {
+    margin: 4px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+.btn-on {
+    background: #2ecc71;
+    color: white;
+}
+
+.btn-off {
+    background: #e74c3c;
+    color: white;
+}
+
+#optionsPanel {
+    margin-top: 8px;
+    padding: 10px;
+    background: #f2f2f2;
+    border-radius: 6px;
+
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.optionRow {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.optionRow label {
+    white-space: nowrap;
+}
+
+select,
+input[type="text"] {
+    padding: 6px;
+    border: 1px solid #aaa;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+select {
+    min-width: 130px;
+}
+
+input[type="text"] {
+    width: 150px;
+}
+
+#editInfo,
+#importInfo {
+    display: none;
+    margin-top: 8px;
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.line-label {
+    background: white;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+
+
+.line-arrow {
+    width: 0;
+    height: 0;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-left: 12px solid currentColor;
+    filter: drop-shadow(0 0 1px #ffffff) drop-shadow(0 0 1px #ffffff);
+    transform-origin: 35% 50%;
+    pointer-events: none;
+}
+
+.unique-label {
+    background: white;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+
+.help-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0,0,0,.45);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+.help-window {
+    position: relative;
+    width: min(760px,95vw);
+    max-height: 85vh;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    padding: 24px 28px 28px;
+    box-sizing: border-box;
+    color: #222;
+    line-height: 1.45;
+}
+.help-window h2 { margin-top: 0; padding-right: 50px; }
+.help-window h3 { margin-top: 22px; }
+.help-window h4 { margin-bottom: 4px; }
+.help-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: #e53935;
+    color: #fff;
+    font-size: 27px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.help-close:hover { background: #c62828; }
+.help-section { border-top: 1px solid #ddd; padding-top: 10px; }
+
+</style>
+<style id="wikisaraExportStyle">
+.wik-export-overlay{display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
+.wik-export-window{position:relative;width:min(760px,95vw);max-height:88vh;overflow:auto;background:#fff;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.35);padding:24px 28px;color:#222}
+.wik-export-close{position:absolute;top:10px;right:12px;width:40px;height:40px;border:0;border-radius:50%;background:#e53935;color:#fff;font-size:27px;font-weight:bold;cursor:pointer}
+.wik-export-field{display:flex;gap:12px;align-items:center;margin:10px 0}.wik-export-field label{min-width:220px;font-weight:600}
+.wik-export-field input{width:160px;padding:7px}.wik-export-legend-row{display:flex;gap:10px;align-items:center;margin:8px 0}.wik-export-legend-row input{flex:1;min-width:240px;padding:9px 10px;box-sizing:border-box}.wik-export-output{display:none;width:100%;min-height:300px;margin-top:16px;box-sizing:border-box;font-family:monospace;white-space:pre}
+
+<style id="routingStyle">
+.routing-overlay{display:none;position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
+.routing-window{position:relative;width:min(620px,95vw);max-height:88vh;overflow:auto;background:#fff;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.35);padding:24px 28px;color:#222;box-sizing:border-box}
+.routing-close{position:absolute;top:10px;right:12px;width:40px;height:40px;border:0;border-radius:50%;background:#e53935;color:#fff;font-size:27px;font-weight:bold;cursor:pointer}
+.routing-row{display:flex;align-items:center;gap:10px;margin:10px 0;flex-wrap:wrap}
+.routing-row label{font-weight:600;min-width:145px}
+.routing-row input,.routing-row select{padding:7px;border:1px solid #aaa;border-radius:5px;box-sizing:border-box}
+.routing-row input[type="text"]{flex:1;min-width:240px}
+.routing-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.routing-info{padding:10px;background:#f2f2f2;border-radius:6px;margin:10px 0;line-height:1.45}
+#btnRouting{background:#1976d2;color:#fff}
+.routing-preview-line{stroke-dasharray:10 7}
+</style>
+</style></head>
+
+<body>
+
+<div id="map"></div>
+
+<div id="panel">
+
+<textarea
+    id="txt"
+    placeholder="Exemple ligne :
+48.123456,2.123456:48.234567,2.234567~Texte ligne 1~Texte ligne 2~{{Rouge}}~ ~5;
+
+Exemple point :
+48.123456,2.123456~Mon point;"
+></textarea>
+
+<!-- =====================================================
+     FONDS CARTOGRAPHIQUES
+===================================================== -->
+
+<div>
+
+    <button onclick="setOSM()">
+        🗺️ OSM
+    </button>
+
+    <button onclick="setIGNClassiques()">
+        🗺️ Cartes IGN classiques
+    </button>
+
+    <button onclick="setHYB()">
+        🌍 Hybride IGN
+    </button>
+
+    <button onclick="setSAT()">
+        🛰️ Satellite
+    </button>
+
+    <button onclick="setAerial1950_1965()">
+        ✈️ IGN 1950-1965
+    </button>
+
+    <button onclick="setAerial1965_1980()">
+        ✈️ IGN 1965-1980
+    </button>
+
+    <button onclick="setAerial1980_1995()">
+        ✈️ IGN 1980-1995
+    </button>
+
+    <button onclick="setIGNHistorique1950()">
+        🕰️ Cartes IGN 1950
+    </button>
+
+    <button onclick="setEtatMajor()">
+        🏛️ Carte d'État-major
+    </button>
+
+    <button onclick="setCadastre()">
+    🏠 Cadastre
+    </button>
+
+    <button onclick="setLidarMNT()">
+        ⛰️ LIDAR MNT IGN
+    </button>
+
+</div>
+
+<div id="opacityControl" style="display:none;">
+    <label>
+        Opacité hybride :
+    </label>
+
+    <input
+        type="range"
+        id="opacity"
+        min="0"
+        max="1"
+        step="0.05"
+        value="0.5"
+    />
+</div>
+
+<!-- =====================================================
+     OPTIONS
+===================================================== -->
+
+<div id="optionsPanel">
+
+    <div class="optionRow">
+
+        <label for="colorSelect">
+            <strong>Couleur :</strong>
+        </label>
+
+        <select id="colorSelect">
+
+            <option value="Noir">Noir</option>
+            <option value="Bleu">Bleu</option>
+            <option value="Bleu clair">Bleu clair</option>
+            <option value="Rouge foncé">Rouge foncé</option>
+
+            <option value="Rouge" selected>
+                Rouge
+            </option>
+
+            <option value="Rouge clair">Rouge clair</option>
+            <option value="Orange">Orange</option>
+            <option value="Jaune">Jaune</option>
+            <option value="Jaune clair">Jaune clair</option>
+            <option value="Vert">Vert</option>
+            <option value="Vert clair">Vert clair</option>
+            <option value="Vert foncé">Vert foncé</option>
+            <option value="Bleu ciel">Bleu ciel</option>
+            <option value="Violet">Violet</option>
+            <option value="Magenta foncé">Magenta foncé</option>
+            <option value="Indigo">Indigo</option>
+            <option value="Blanc">Blanc</option>
+            <option value="Marron">Marron</option>
+            <option value="Marron clair">Marron clair</option>
+            <option value="Gris">Gris</option>
+            <option value="Gris clair">Gris clair</option>
+            <option value="Gris foncé">Gris foncé</option>
+
+        </select>
+
+    </div>
+
+    <div class="optionRow">
+
+        <label for="widthSelect">
+            <strong>Épaisseur :</strong>
+        </label>
+
+        <select id="widthSelect">
+
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+
+        </select>
+
+    </div>
+
+    <div class="optionRow">
+
+        <label for="text1Select">
+            <strong>Texte ligne 1 :</strong>
+        </label>
+
+        <input
+            type="text"
+            id="text1Select"
+            placeholder="Texte ligne 1"
+        >
+
+    </div>
+
+    <div class="optionRow">
+
+        <label for="text2Select">
+            <strong>Texte ligne 2 :</strong>
+        </label>
+
+        <input
+            type="text"
+            id="text2Select"
+            placeholder="Texte ligne 2"
+        >
+
+    </div>
+
+    <div class="optionRow">
+
+        <label for="uniqueText">
+            <strong>Texte point :</strong>
+        </label>
+
+        <input
+            type="text"
+            id="uniqueText"
+            placeholder="Texte du point"
+        >
+
+    </div>
+
+</div>
+
+<!-- =====================================================
+     MODES
+===================================================== -->
+
+<div>
+
+    <button
+        id="btnAdd"
+        class="btn-off"
+        onclick="setMode(1)"
+    >
+        Ajout ligne: OFF
+    </button>
+
+    <button
+        id="btnInsert"
+        class="btn-off"
+        onclick="setMode(2)"
+    >
+        Insertion: OFF
+    </button>
+
+    <button
+        id="btnDelete"
+        class="btn-off"
+        onclick="setMode(3)"
+    >
+        🗑️ Suppression: OFF
+    </button>
+
+    <button
+        id="btnEdit"
+        class="btn-off"
+        onclick="setMode(4)"
+    >
+        ✏️ Édition: OFF
+    </button>
+
+    <button
+        id="btnUnique"
+        class="btn-off"
+        onclick="setMode(5)"
+    >
+        📍 Point unique: OFF
+    </button>
+
+    <button
+        id="btnStop"
+        class="btn-off"
+        onclick="stopLine()"
+    >
+        ⏹️ Terminer ligne
+    </button>
+    <button
+        id="btnArrows"
+        class="btn-on"
+        onclick="toggleArrows()"
+    >
+        ➡️ Flèches: ON
+    </button>
+
+    <button
+        id="btnExtend"
+        class="btn-off"
+        onclick="setMode(6)"
+    >
+        ➕ Prolonger ligne: OFF
+    </button>
+
+    <button
+        id="btnReverse"
+        class="btn-off"
+        onclick="setMode(7)"
+    >
+        🔄 Inverser sens ligne: OFF
+    </button>
+
+
+
+    <button
+        id="btnDeletePoint"
+        class="btn-off"
+        onclick="setMode(8)"
+    >
+        🗑️ Supprimer points: OFF
+    </button>
+
+    <button
+        id="btnSplit"
+        class="btn-off"
+        onclick="setMode(9)"
+    >
+        ✂️ Couper ligne: OFF
+    </button>
+
+    <button
+        id="btnMerge"
+        class="btn-off"
+        onclick="setMode(10)"
+    >
+        🔗 Fusionner lignes: OFF
+    </button>
+
+    <button
+        id="btnRouting"
+        type="button"
+        class="btn-off"
+        onclick="window.startRoutingMode()"
+    >
+        🛣️ Itinéraire routier
+    </button>
+
+    <button
+        id="btnValidateRouting"
+        class="btn-off"
+        onclick="openRoutingParams()"
+        style="display:none"
+    >
+        Valider
+    </button>
+
+</div>
+
+<div id="editInfo"></div>
+
+<div>
+
+    <button onclick="loadFromText()">
+        📥 Importer les lignes / points
+    </button>
+
+    <button id="btnUndo" onclick="undoAction()" disabled>
+        ↩️ Annuler
+    </button>
+
+    <button onclick="clearAll()">
+        🧹 Effacer tout
+    </button>
+<button id="btnWikisaraExport" onclick="openWikisaraExport()">Export Wikisara</button>
+<button id="btnHelp" onclick="openHelp()">❓ Aide</button>
+
+</div>
+
+<div id="importInfo"></div>
+
+<div id="info"></div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+function resetWikisaraExport() {
+
+    const width =
+        document.getElementById("wikExportWidth");
+
+    const height =
+        document.getElementById("wikExportHeight");
+
+    const legends =
+        document.getElementById("wikExportLegendRows");
+
+    const output =
+        document.getElementById("wikExportOutput");
+
+    if (width) width.value = 700;
+    if (height) height.value = 700;
+    if (legends) legends.innerHTML = "";
+    if (output) {
+        output.value = "";
+        output.style.display = "none";
+    }
+
+}
+</script>
+
+<script>
+
+/* =====================================================
+   CARTE
+===================================================== */
+
+const map =
+    L.map("map")
+    .setView(
+        [46.5, 2.5],
+        6
+    );
+
+
+/* =====================================================
+   OPENSTREETMAP
+===================================================== */
+
+const osm =
+    L.tileLayer(
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+            maxZoom: 19,
+            attribution:
+                "© OpenStreetMap contributors"
+        }
+    );
+
+
+/* =====================================================
+   CARTES IGN CLASSIQUES
+=====================================================
+
+   Couche officielle :
+   GEOGRAPHICALGRIDSYSTEMS.MAPS
+
+   Cette couche correspond aux
+   "Cartes IGN classiques".
+
+   Le service utilise l'accès WMTS
+   de la Géoplateforme IGN.
+
+===================================================== */
+
+const ignClassiques =
+    L.tileLayer(
+        "https://data.geopf.fr/private/wmts" +
+        "?apikey=ign_scan_ws" +
+        "&SERVICE=WMTS" +
+        "&REQUEST=GetTile" +
+        "&VERSION=1.0.0" +
+        "&LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS" +
+        "&STYLE=normal" +
+        "&FORMAT=image/jpeg" +
+        "&TILEMATRIXSET=PM" +
+        "&TILEMATRIX={z}" +
+        "&TILEROW={y}" +
+        "&TILECOL={x}",
+        {
+            tileSize: 256,
+            minZoom: 5,
+            maxZoom: 18,
+            attribution:
+                "© IGN - Cartes IGN classiques"
+        }
+    );
+
+
+/* =====================================================
+   IGN HISTORIQUE 1950
+===================================================== */
+
+const ignHistorique1950 =
+    L.tileLayer(
+        "https://data.geopf.fr/wmts" +
+        "?SERVICE=WMTS" +
+        "&REQUEST=GetTile" +
+        "&VERSION=1.0.0" +
+        "&LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN50.1950" +
+        "&STYLE=normal" +
+        "&FORMAT=image/jpeg" +
+        "&TILEMATRIXSET=PM" +
+        "&TILEMATRIX={z}" +
+        "&TILEROW={y}" +
+        "&TILECOL={x}",
+        {
+            tileSize: 256,
+            minZoom: 5,
+            maxNativeZoom: 15,
+            maxZoom: 22,
+            attribution: "© IGN - SCAN50 Historique 1950"
+        }
+    );
+
+
+/* =====================================================
+   PHOTOGRAPHIES AÉRIENNES HISTORIQUES 1965-1980
+===================================================== */
+
+const aerial1965_1980 =
+    L.tileLayer(
+        "https://data.geopf.fr/wmts" +
+        "?SERVICE=WMTS" +
+        "&REQUEST=GetTile" +
+        "&VERSION=1.0.0" +
+        "&LAYER=ORTHOIMAGERY.ORTHOPHOTOS.1965-1980" +
+        "&STYLE=BDORTHOHISTORIQUE" +
+        "&FORMAT=image/png" +
+        "&TILEMATRIXSET=PM" +
+        "&TILEMATRIX={z}" +
+        "&TILEROW={y}" +
+        "&TILECOL={x}",
+        {
+            tileSize: 256,
+            minZoom: 5,
+            maxNativeZoom: 18,
+            maxZoom: 22,
+            attribution:
+                "© IGN - Photographies aériennes historiques 1965-1980"
+        }
+    );
+
+
+/* =====================================================
+   PHOTOGRAPHIES AÉRIENNES HISTORIQUES 1980-1995
+===================================================== */
+
+const aerial1980_1995 =
+    L.tileLayer(
+        "https://data.geopf.fr/wmts" +
+        "?SERVICE=WMTS" +
+        "&REQUEST=GetTile" +
+        "&VERSION=1.0.0" +
+        "&LAYER=ORTHOIMAGERY.ORTHOPHOTOS.1980-1995" +
+        "&STYLE=BDORTHOHISTORIQUE" +
+        "&FORMAT=image/png" +
+        "&TILEMATRIXSET=PM_3_18" +
+        "&TILEMATRIX={z}" +
+        "&TILEROW={y}" +
+        "&TILECOL={x}",
+        {
+            tileSize: 256,
+            minZoom: 3,
+            maxNativeZoom: 18,
+            maxZoom: 18,
+            attribution:
+                "© IGN - Photographies aériennes historiques 1980-1995"
+        }
+    );
+
+
+/* =====================================================
+   PHOTOGRAPHIES AÉRIENNES 1950-1965
+===================================================== */
+
+const aerial1950_1965 =
+    L.tileLayer(
+        "https://data.geopf.fr/wmts" +
+        "?SERVICE=WMTS" +
+        "&REQUEST=GetTile" +
+        "&VERSION=1.0.0" +
+        "&LAYER=ORTHOIMAGERY.ORTHOPHOTOS.1950-1965" +
+        "&STYLE=BDORTHOHISTORIQUE" +
+        "&FORMAT=image/png" +
+        "&TILEMATRIXSET=PM" +
+        "&TILEMATRIX={z}" +
+        "&TILEROW={y}" +
+        "&TILECOL={x}",
+        {
+            tileSize: 256,
+            minZoom: 5,
+            maxNativeZoom: 18,
+            maxZoom: 22,
+            attribution:
+                "© IGN - Photographies aériennes historiques 1950-1965"
+        }
+    );
+
+
+/* =====================================================
+   CARTE D'ÉTAT-MAJOR
+===================================================== */
+
+const etatMajor =
+    L.tileLayer(
+         "https://data.geopf.fr/wmts" +
+        "?SERVICE=WMTS" +
+        "&REQUEST=GetTile" +
+        "&VERSION=1.0.0" +
+        "&LAYER=GEOGRAPHICALGRIDSYSTEMS.ETATMAJOR40" +
+        "&STYLE=normal" +
+        "&FORMAT=image/jpeg" +
+        "&TILEMATRIXSET=PM" +
+        "&TILEMATRIX={z}" +
+        "&TILEROW={y}" +
+        "&TILECOL={x}",
+        {
+            tileSize: 256,
+            minZoom: 6,
+            maxNativeZoom: 15,
+            maxZoom: 22,
+            attribution: "© IGN - Carte d'État-major 1820-1866"
+        }
+    );
+
+
+/* =====================================================
+   ORTHOPHOTOS ACTUELLES
+===================================================== */
+
+const sat =
+    L.tileLayer(
+        "https://data.geopf.fr/wmts" +
+        "?SERVICE=WMTS" +
+        "&REQUEST=GetTile" +
+        "&VERSION=1.0.0" +
+        "&LAYER=ORTHOIMAGERY.ORTHOPHOTOS" +
+        "&STYLE=normal" +
+        "&FORMAT=image/jpeg" +
+        "&TILEMATRIXSET=PM" +
+        "&TILEMATRIX={z}" +
+        "&TILEROW={y}" +
+        "&TILECOL={x}",
+        {
+            tileSize: 256,
+            maxZoom: 19,
+            opacity: 0.9,
+            attribution:
+                "© IGN - Géoplateforme"
+        }
+    );
+
+
+/* =====================================================
+   PLAN IGN
+===================================================== */
+
+const routes =
+    L.tileLayer(
+        "https://data.geopf.fr/wmts" +
+        "?SERVICE=WMTS" +
+        "&REQUEST=GetTile" +
+        "&VERSION=1.0.0" +
+        "&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2" +
+        "&STYLE=normal" +
+        "&FORMAT=image/png" +
+        "&TILEMATRIXSET=PM" +
+        "&TILEMATRIX={z}" +
+        "&TILEROW={y}" +
+        "&TILECOL={x}",
+        {
+            tileSize: 256,
+            maxZoom: 19,
+            opacity: 0.35,
+            attribution:
+                "© IGN - Géoplateforme"
+        }
+    );
+
+
+/* =====================================================
+   CADASTRE
+===================================================== */
+
+const cadastre =
+    L.tileLayer(
+        "https://data.geopf.fr/wmts" +
+        "?SERVICE=WMTS" +
+        "&REQUEST=GetTile" +
+        "&VERSION=1.0.0" +
+        "&LAYER=CADASTRALPARCELS.PARCELS" +
+        "&STYLE=normal" +
+        "&FORMAT=image/png" +
+        "&TILEMATRIXSET=PM" +
+        "&TILEMATRIX={z}" +
+        "&TILEROW={y}" +
+        "&TILECOL={x}",
+        {
+            tileSize: 256,
+            maxZoom: 19,
+            opacity: 0.9,
+            attribution: "© IGN - Cadastre"
+        }
+    );
+
+
+/* =====================================================
+   LIDAR HD - MNT IGN
+===================================================== */
+
+const lidarMNT =
+    L.tileLayer(
+        "https://data.geopf.fr/wmts" +
+        "?SERVICE=WMTS" +
+        "&REQUEST=GetTile" +
+        "&VERSION=1.0.0" +
+        "&LAYER=IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW" +
+        "&STYLE=normal" +
+        "&FORMAT=image/png" +
+        "&TILEMATRIXSET=PM" +
+        "&TILEMATRIX={z}" +
+        "&TILEROW={y}" +
+        "&TILECOL={x}",
+        {
+            tileSize: 256,
+            minZoom: 6,
+            maxNativeZoom: 18,
+            maxZoom: 22,
+            opacity: 0.9,
+            attribution: "© IGN - LiDAR HD MNT"
+        }
+    );
+
+
+osm.addTo(map);
+
+let current = "OSM";
+
+
+/* =====================================================
+   COULEURS
+===================================================== */
+
+const colors = {
+
+    "Noir": "#000000",
+    "Bleu": "#0000FF",
+    "Bleu clair": "#4169E1",
+    "Rouge foncé": "#8B0000",
+    "Rouge": "#FF0000",
+    "Rouge clair": "#FF6666",
+    "Orange": "#FFA500",
+    "Jaune": "#FFFF00",
+    "Jaune clair": "#FFFF99",
+    "Vert": "#008000",
+    "Vert clair": "#66CC66",
+    "Vert foncé": "#006400",
+    "Bleu ciel": "#00BFFF",
+    "Violet": "#800080",
+    "Magenta foncé": "#8B008B",
+    "Indigo": "#4B0082",
+    "Blanc": "#FFFFFF",
+    "Marron": "#8B4513",
+    "Marron clair": "#C4A484",
+    "Gris": "#808080",
+    "Gris clair": "#C0C0C0",
+    "Gris foncé": "#666666"
+
+};
+
+
+/* =====================================================
+   VARIABLES
+===================================================== */
+
+let lines = [];
+let uniquePoints = [];
+let activeLine = null;
+let selectedLine = null;
+let selectedUniquePoint = null;
+let mode = 0;
+
+// Paramètres des fonctions de modification des lignes
+let extensionLine = null;
+let extensionEnd = null; // "start" ou "end"
+let splitLineTarget = null; // ligne sélectionnée pour la coupe
+let mergeLineTarget = null; // première ligne sélectionnée pour la fusion
+
+/* =====================================================
+   HISTORIQUE ANNULER
+===================================================== */
+const undoHistory = [];
+const UNDO_MAX = 100;
+let undoRestoring = false;
+let undoTextEditing = false;
+
+function captureUndoState() {
+    if (undoRestoring) return;
+    const state = {
+        lines: lines.map(function(line) {
+            return {
+                points: line.points.map(function(marker) {
+                    const p = marker.getLatLng();
+                    return {lat:p.lat,lng:p.lng};
+                }),
+                text1: line.text1 || "",
+                text2: line.text2 || "",
+                colorName: line.colorName || "Rouge",
+                width: Number(line.width) || 5
+            };
+        }),
+        uniquePoints: uniquePoints.map(function(point) {
+            return {lat:Number(point.lat),lng:Number(point.lng),text:point.text || ""};
+        })
+    };
+    const signature = JSON.stringify(state);
+    if (undoHistory.length && undoHistory[undoHistory.length-1].signature === signature) return;
+    undoHistory.push({signature:signature,state:state});
+    if (undoHistory.length > UNDO_MAX) undoHistory.shift();
+    updateUndoButton();
+}
+
+function updateUndoButton() {
+    const button = document.getElementById("btnUndo");
+    if (!button) return;
+    button.disabled = undoHistory.length === 0 || undoRestoring;
+    button.innerText = "↩️ Annuler" + (undoHistory.length ? " (" + undoHistory.length + ")" : "");
+}
+
+function restoreUndoState(state) {
+    if (!state) return;
+
+    undoRestoring = true;
+
+    try {
+        // Nettoyage silencieux : surtout ne pas appeler clearAll(),
+        // car clearAll() possède son propre enregistrement d'historique.
+        lines.forEach(function(lineObj) {
+            lineObj.points.forEach(function(point) {
+                if (point && map.hasLayer(point)) map.removeLayer(point);
+            });
+            if (lineObj.label && map.hasLayer(lineObj.label)) {
+                map.removeLayer(lineObj.label);
+            }
+            clearLineArrows(lineObj);
+            if (lineObj.arrowLayer && map.hasLayer(lineObj.arrowLayer)) {
+                map.removeLayer(lineObj.arrowLayer);
+            }
+            if (lineObj.polyline && map.hasLayer(lineObj.polyline)) {
+                map.removeLayer(lineObj.polyline);
+            }
+        });
+
+        uniquePoints.forEach(function(point) {
+            if (point.marker && map.hasLayer(point.marker)) map.removeLayer(point.marker);
+            if (point.label && map.hasLayer(point.label)) map.removeLayer(point.label);
+        });
+
+        lines = [];
+        uniquePoints = [];
+        activeLine = null;
+        selectedLine = null;
+        selectedUniquePoint = null;
+        extensionLine = null;
+        extensionEnd = null;
+        splitLineTarget = null;
+        mergeLineTarget = null;
+        mode = 0;
+
+        // Reconstruction exacte de l'état précédent.
+        state.lines.forEach(function(savedLine) {
+            const line = createLine(
+                savedLine.colorName,
+                savedLine.width,
+                savedLine.text1,
+                savedLine.text2
+            );
+
+            savedLine.points.forEach(function(point) {
+                addPoint(line, point.lat, point.lng, false);
+            });
+
+            line.polyline.setLatLngs(
+                line.points.map(function(marker) {
+                    return marker.getLatLng();
+                })
+            );
+            updateLineLabel(line);
+        });
+
+        state.uniquePoints.forEach(function(savedPoint) {
+            createUniquePoint(
+                savedPoint.lat,
+                savedPoint.lng,
+                savedPoint.text
+            );
+        });
+
+        document.getElementById("text1Select").value = "";
+        document.getElementById("text2Select").value = "";
+        document.getElementById("uniqueText").value = "";
+
+        syncToText();
+        deselectLine();
+        update();
+        resetWikisaraExport();
+
+    } finally {
+        undoRestoring = false;
+        updateUndoButton();
+    }
+}
+
+function undoAction() {
+    if (undoRestoring || undoHistory.length === 0) return;
+
+    // Chaque entrée représente l'état AVANT une action.
+    // On retire uniquement cette dernière entrée et on restaure cet état,
+    // sans jamais enregistrer la restauration comme une nouvelle action.
+    const entry = undoHistory.pop();
+    restoreUndoState(entry.state);
+}
+
+/* =====================================================
+   OPACITÉ
+===================================================== */
+
+document
+    .getElementById("opacity")
+    .addEventListener(
+        "input",
+        function(e) {
+
+            const value =
+                parseFloat(e.target.value);
+
+            /*
+             * Ce réglage n'agit que sur la couche Hybride IGN.
+             * 0   = 100 % carte / 0 % satellite
+             * 0.5 = 50 % carte / 50 % satellite
+             * 1   = 0 % carte / 100 % satellite
+             */
+            if (current !== "Hybride IGN") return;
+
+            sat.setOpacity(value);
+            routes.setOpacity(1 - value);
+        }
+    );
+
+function showOpacityControl(show) {
+    const control = document.getElementById("opacityControl");
+    if (control) {
+        control.style.display = show ? "block" : "none";
+    }
+}
+
+function setBaseLayerOpacity(layer, value) {
+    if (layer && typeof layer.setOpacity === "function") {
+        layer.setOpacity(value);
+    }
+}
+
+
+
+function clearBase() {
+
+    [
+        osm,
+        ignClassiques,
+        cadastre,
+        lidarMNT,
+        ignHistorique1950,
+        aerial1950_1965,
+        aerial1965_1980,
+        aerial1980_1995,
+        etatMajor,
+        sat,
+        routes
+    ].forEach(function(layer) {
+        if (layer && map.hasLayer(layer)) {
+            map.removeLayer(layer);
+        }
+    });
+
+}
+
+
+
+/* =====================================================
+   FONDS
+===================================================== */
+
+function setOSM() {
+
+    clearBase();
+    showOpacityControl(false);
+    setBaseLayerOpacity(osm, 1);
+
+    osm.addTo(map);
+
+    current = "OSM";
+
+    update();
+
+}
+
+
+function setIGNClassiques() {
+
+    clearBase();
+    showOpacityControl(false);
+    setBaseLayerOpacity(ignClassiques, 1);
+
+    ignClassiques.addTo(map);
+
+    current =
+        "Cartes IGN classiques";
+
+    update();
+
+}
+
+
+function setIGNHistorique1950() {
+
+    clearBase();
+    showOpacityControl(false);
+    setBaseLayerOpacity(ignHistorique1950, 1);
+
+    ignHistorique1950.addTo(map);
+
+    current =
+        "Cartes IGN 1950";
+
+    update();
+
+}
+
+
+function setAerial1965_1980() {
+
+    clearBase();
+    showOpacityControl(false);
+    setBaseLayerOpacity(aerial1965_1980, 1);
+
+    aerial1965_1980.addTo(map);
+
+    current =
+        "IGN 1965-1980";
+
+    update();
+
+}
+
+
+function setAerial1980_1995() {
+
+    clearBase();
+    showOpacityControl(false);
+    setBaseLayerOpacity(aerial1980_1995, 1);
+
+    aerial1980_1995.addTo(map);
+
+    current =
+        "IGN 1980-1995";
+
+    update();
+
+}
+
+
+function setAerial1950_1965() {
+
+    clearBase();
+    showOpacityControl(false);
+    setBaseLayerOpacity(aerial1950_1965, 1);
+
+    aerial1950_1965.addTo(map);
+
+    current =
+        "IGN 1950-1965";
+
+    update();
+
+}
+
+
+function setEtatMajor() {
+
+    clearBase();
+    showOpacityControl(false);
+    setBaseLayerOpacity(etatMajor, 1);
+
+    etatMajor.addTo(map);
+
+    current =
+        "État-major 1820-1866";
+
+    update();
+
+}
+
+
+function setCadastre() {
+
+    clearBase();
+    showOpacityControl(false);
+    setBaseLayerOpacity(cadastre, 1);
+
+    cadastre.addTo(map);
+
+    current = "Cadastre";
+
+    update();
+
+}
+
+
+function setLidarMNT() {
+
+    clearBase();
+    showOpacityControl(false);
+    setBaseLayerOpacity(lidarMNT, 1);
+
+    lidarMNT.addTo(map);
+
+    current = "LIDAR MNT IGN";
+
+    update();
+}
+
+
+function setSAT() {
+
+    clearBase();
+    showOpacityControl(false);
+    setBaseLayerOpacity(sat, 1);
+
+    sat.addTo(map);
+
+    current =
+        "Satellite";
+
+    update();
+
+}
+
+
+function setHYB() {
+
+    clearBase();
+    showOpacityControl(true);
+
+    sat.addTo(map);
+
+    routes.addTo(map);
+
+    /* Position centrale par défaut : 50 % carte / 50 % satellite. */
+    const opacityControl =
+        document.getElementById("opacity");
+
+    if (opacityControl) {
+        opacityControl.value = "0.5";
+    }
+
+    sat.setOpacity(0.5);
+    routes.setOpacity(0.5);
+
+    current =
+        "Hybride IGN";
+
+    update();
+
+}
+
+
+/* =====================================================
+   MODES
+===================================================== */
+
+function setMode(m) {
+
+    if (mode === m) {
+        mode = 0;
+
+        extensionLine = null;
+        extensionEnd = null;
+        splitLineTarget = null;
+        deselectLine();
+        selectedUniquePoint = null;
+
+        update();
+        return;
+    }
+
+    // Le mode Ajout démarre une nouvelle ligne.
+    if (m === 1 && mode !== 1) {
+        activeLine = null;
+
+        document.getElementById(
+            "text1Select"
+        ).value = "";
+
+        document.getElementById(
+            "text2Select"
+        ).value = "";
+    }
+
+    mode = m;
+
+    extensionLine = null;
+    extensionEnd = null;
+    splitLineTarget = null;
+    selectedUniquePoint = null;
+
+    if (mode !== 4 && mode !== 6 && mode !== 9 && mode !== 10) {
+        deselectLine();
+    }
+
+    update();
+}
+
+
+function updateLineParameterControls() {
+
+    const editable =
+        mode === 1 ||
+        mode === 4;
+
+    [
+        "text1Select",
+        "text2Select",
+        "colorSelect",
+        "widthSelect"
+    ].forEach(function(id) {
+        const control = document.getElementById(id);
+        if (control) {
+            control.disabled = !editable;
+        }
+    });
+}
+
+
+function updateButtons() {
+
+    const buttons = {
+        btnAdd: 1,
+        btnInsert: 2,
+        btnDelete: 3,
+        btnEdit: 4,
+        btnUnique: 5,
+        btnExtend: 6,
+        btnReverse: 7,
+        btnDeletePoint: 8,
+        btnSplit: 9,
+        btnMerge: 10
+    };
+
+    Object.entries(buttons)
+        .forEach(
+            function([id, value]) {
+                const button =
+                    document.getElementById(id);
+
+                if (!button) {
+                    return;
+                }
+
+                button.className =
+                    mode === value
+                        ? "btn-on"
+                        : "btn-off";
+            }
+        );
+
+    document.getElementById(
+        "btnAdd"
+    ).innerText =
+        "Ajout ligne: " +
+        (mode === 1 ? "ON" : "OFF");
+
+    document.getElementById(
+        "btnInsert"
+    ).innerText =
+        "Insertion: " +
+        (mode === 2 ? "ON" : "OFF");
+
+    document.getElementById(
+        "btnDelete"
+    ).innerText =
+        "🗑️ Suppression: " +
+        (mode === 3 ? "ON" : "OFF");
+
+    document.getElementById(
+        "btnEdit"
+    ).innerText =
+        "✏️ Édition: " +
+        (mode === 4 ? "ON" : "OFF");
+
+    document.getElementById(
+        "btnUnique"
+    ).innerText =
+        "📍 Point unique: " +
+        (mode === 5 ? "ON" : "OFF");
+
+    document.getElementById(
+        "btnExtend"
+    ).innerText =
+        "➕ Prolonger ligne: " +
+        (mode === 6 ? "ON" : "OFF");
+
+    document.getElementById(
+        "btnReverse"
+    ).innerText =
+        "🔄 Inverser sens ligne: " +
+        (mode === 7 ? "ON" : "OFF");
+
+    document.getElementById(
+        "btnDeletePoint"
+    ).innerText =
+        "🗑️ Supprimer points: " +
+        (mode === 8 ? "ON" : "OFF");
+
+    document.getElementById(
+        "btnSplit"
+    ).innerText =
+        "✂️ Couper ligne: " +
+        (mode === 9 ? "ON" : "OFF");
+
+    document.getElementById(
+        "btnMerge"
+    ).innerText =
+        "🔗 Fusionner lignes: " +
+        (mode === 10 ? "ON" : "OFF");
+
+    updateLineParameterControls();
+}
+
+
+function stopLine() {
+
+    activeLine = null;
+    extensionLine = null;
+    extensionEnd = null;
+    splitLineTarget = null;
+    mergeLineTarget = null;
+    deselectLine();
+
+    mode = 0;
+
+    update();
+}
+/* =====================================================
+   CLIC CARTE
+===================================================== */
+
+map.on(
+    "click",
+    function(e) {
+
+        if (routingMode) {
+            handleRoutingMapClick(e);
+            return;
+        }
+
+        if (mode === 1) {
+            if (!undoRestoring) captureUndoState();
+
+            if (!activeLine) {
+                activeLine = createLine();
+            }
+
+            addPoint(
+                activeLine,
+                e.latlng.lat,
+                e.latlng.lng,
+                true
+            );
+
+            return;
+        }
+
+        if (mode === 6) {
+
+            if (extensionLine && extensionEnd && !undoRestoring) captureUndoState();
+
+            // Le premier clic sur la ligne sert uniquement à sélectionner
+            // la ligne et son extrémité. Il ne doit jamais créer de point.
+            if (e.originalEvent && e.originalEvent._extensionSelectionClick) {
+                return;
+            }
+
+            // Après la sélection du côté de la ligne, chaque clic sur la carte
+            // ajoute un nouveau point à l'extrémité choisie.
+            if (!extensionLine || !extensionEnd) {
+                showModificationInfo(
+                    "Cliquez d'abord sur la ligne, près du côté que vous souhaitez prolonger."
+                );
+                return;
+            }
+
+            addPointToExtension(
+                extensionLine,
+                e.latlng.lat,
+                e.latlng.lng,
+                extensionEnd
+            );
+
+            showModificationInfo(
+                "Prolongement en cours : continuez à cliquer sur la carte pour ajouter des points à l'extrémité " +
+                (extensionEnd === "start" ? "de début." : "de fin.")
+            );
+
+            return;
+        }
+
+        if (mode === 5) {
+
+            if (!undoRestoring) captureUndoState();
+
+            createUniquePoint(
+                e.latlng.lat,
+                e.latlng.lng
+            );
+
+            return;
+        }
+
+        if (mode === 9) {
+
+            // Une ligne doit d'abord être sélectionnée par un premier clic.
+            // Le deuxième clic peut être effectué directement sur la ligne
+            // ou à proximité de celle-ci : la position est projetée sur la ligne.
+            if (!splitLineTarget) {
+                showModificationInfo(
+                    "Cliquez d'abord sur la ligne que vous souhaitez couper."
+                );
+                return;
+            }
+
+            if (!undoRestoring) captureUndoState();
+            splitLineAtClick(
+                splitLineTarget,
+                e.latlng
+            );
+
+            splitLineTarget = null;
+
+            return;
+        }
+    }
+);
+
+
+/* =====================================================
+   CRÉATION LIGNE
+===================================================== */
+
+function createLine(
+    colorName = null,
+    width = null,
+    text1 = null,
+    text2 = null
+) {
+
+    const manualCreation =
+        colorName === null &&
+        width === null &&
+        text1 === null &&
+        text2 === null;
+
+
+    if (colorName === null) {
+
+        colorName =
+            document.getElementById(
+                "colorSelect"
+            ).value;
+
+    }
+
+
+    if (width === null) {
+
+        width =
+            parseInt(
+                document.getElementById(
+                    "widthSelect"
+                ).value,
+                10
+            );
+
+    }
+
+
+    if (text1 === null) {
+
+        text1 =
+            manualCreation
+                ? ""
+                : document.getElementById(
+                    "text1Select"
+                ).value;
+
+    }
+
+
+    if (text2 === null) {
+
+        text2 =
+            manualCreation
+                ? ""
+                : document.getElementById(
+                    "text2Select"
+                ).value;
+
+    }
+
+
+    if (!colors[colorName]) {
+        colorName = "Rouge";
+    }
+
+
+    if (
+        isNaN(width) ||
+        width < 1
+    ) {
+        width = 5;
+    }
+
+
+    const lineObj = {
+
+        points: [],
+
+        text1: text1,
+
+        text2: text2,
+
+        colorName: colorName,
+
+        width: width,
+
+        polyline:
+            L.polyline(
+                [],
+                {
+                    color:
+                        colors[colorName],
+
+                    weight:
+                        width
+                }
+            ).addTo(map),
+
+        label: null,
+
+        arrowLayer: L.layerGroup().addTo(map)
+
+    };
+
+
+    lines.push(lineObj);
+
+    activeLine = lineObj;
+
+    setupLineClick(lineObj);
+
+    updateLineLabel(lineObj);
+
+    return lineObj;
+
+}
+
+
+/* =====================================================
+   FLÈCHES DE SENS DES LIGNES
+   Les flèches sont des polylignes Leaflet non interactives.
+   Elles ne capturent aucun clic et ne perturbent pas les fonctions
+   de sélection, insertion, prolongement ou suppression.
+===================================================== */
+
+let arrowsVisible = true;
+
+function toggleArrows() {
+    arrowsVisible = !arrowsVisible;
+
+    const button = document.getElementById("btnArrows");
+
+    if (button) {
+        button.textContent = arrowsVisible
+            ? "➡️ Flèches: ON"
+            : "➡️ Flèches: OFF";
+
+        button.className =
+            arrowsVisible
+                ? "btn-on"
+                : "btn-off";
+    }
+
+    updateAllLineArrows();
+}
+
+function getArrowInterval() {
+    const zoom = map.getZoom();
+
+    if (zoom <= 6) return 180;
+    if (zoom >= 19) return 55;
+
+    return 180 - (zoom - 6) * (125 / 13);
+}
+
+function clearLineArrows(lineObj) {
+    if (!lineObj || !lineObj.arrowLayer) return;
+    lineObj.arrowLayer.clearLayers();
+}
+
+function updateLineArrows(lineObj) {
+    if (!lineObj) return;
+
+    if (!lineObj.arrowLayer) {
+        lineObj.arrowLayer = L.layerGroup().addTo(map);
+    }
+
+    clearLineArrows(lineObj);
+
+    if (!arrowsVisible) return;
+
+    const latLngs = lineObj.polyline.getLatLngs();
+    if (!latLngs || latLngs.length < 2) return;
+
+    const points = latLngs.map(function(latlng) {
+        return map.latLngToLayerPoint(latlng);
+    });
+
+    const interval = getArrowInterval();
+    const wingLength = 9;
+    const wingWidth = 5;
+    let totalLength = 0;
+
+    for (let i = 1; i < points.length; i++) {
+        totalLength += points[i - 1].distanceTo(points[i]);
+    }
+
+    if (totalLength < interval * 0.75) return;
+
+    for (let target = interval / 2; target < totalLength; target += interval) {
+        let accumulated = 0;
+
+        for (let i = 1; i < points.length; i++) {
+            const a = points[i - 1];
+            const b = points[i];
+            const segmentLength = a.distanceTo(b);
+
+            if (segmentLength === 0) continue;
+
+            if (accumulated + segmentLength >= target) {
+                const ratio = (target - accumulated) / segmentLength;
+                const tip = L.point(
+                    a.x + (b.x - a.x) * ratio,
+                    a.y + (b.y - a.y) * ratio
+                );
+
+                const dx = b.x - a.x;
+                const dy = b.y - a.y;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                const ux = dx / length;
+                const uy = dy / length;
+                const px = -uy;
+                const py = ux;
+
+                const base = L.point(
+                    tip.x - ux * wingLength,
+                    tip.y - uy * wingLength
+                );
+
+                const left = L.point(
+                    base.x + px * wingWidth,
+                    base.y + py * wingWidth
+                );
+
+                const right = L.point(
+                    base.x - px * wingWidth,
+                    base.y - py * wingWidth
+                );
+
+                L.polyline(
+                    [
+                        map.layerPointToLatLng(left),
+                        map.layerPointToLatLng(tip),
+                        map.layerPointToLatLng(right)
+                    ],
+                    {
+                        color: colors[lineObj.colorName] || colors["Rouge"],
+                        weight: Math.max(2, Math.min(4, (lineObj.width || 5) * 0.65)),
+                        opacity: 1,
+                        interactive: false,
+                        bubblingMouseEvents: false,
+                        lineCap: "round",
+                        lineJoin: "round"
+                    }
+                ).addTo(lineObj.arrowLayer);
+
+                break;
+            }
+
+            accumulated += segmentLength;
+        }
+    }
+}
+
+function updateAllLineArrows() {
+    lines.forEach(function(lineObj) {
+        updateLineArrows(lineObj);
+    });
+}
+
+map.on("zoomend", updateAllLineArrows);
+
+
+/* =====================================================
+   LABEL LIGNE
+===================================================== */
+
+function updateLineLabel(lineObj) {
+
+    if (!lineObj) {
+        return;
+    }
+
+
+    if (lineObj.label) {
+
+        map.removeLayer(
+            lineObj.label
+        );
+
+        lineObj.label = null;
+
+    }
+
+
+    const text1 =
+        lineObj.text1 &&
+        String(lineObj.text1).trim() !== ""
+            ? String(lineObj.text1).trim()
+            : "";
+
+
+    const text2 =
+        lineObj.text2 &&
+        String(lineObj.text2).trim() !== ""
+            ? String(lineObj.text2).trim()
+            : "";
+
+
+    if (
+        text1 === "" &&
+        text2 === ""
+    ) {
+        return;
+    }
+
+
+    let html = "";
+
+
+    if (text1 !== "") {
+        html += escapeHtml(text1);
+    }
+
+
+    if (
+        text1 !== "" &&
+        text2 !== ""
+    ) {
+        html += "<br>";
+    }
+
+
+    if (text2 !== "") {
+        html += escapeHtml(text2);
+    }
+
+
+    const latLngs =
+        lineObj.polyline.getLatLngs();
+
+
+    if (
+        !latLngs ||
+        latLngs.length === 0
+    ) {
+        return;
+    }
+
+
+    lineObj.label =
+        L.marker(
+            getLineMiddle(latLngs),
+            {
+                interactive: false,
+
+                icon:
+                    L.divIcon({
+
+                        className:
+                            "line-label",
+
+                        html: html,
+
+                        iconSize: null,
+
+                        iconAnchor: [
+                            0,
+                            0
+                        ]
+
+                    })
+            }
+        )
+        .addTo(map);
+
+}
+
+
+/* =====================================================
+   MILIEU LIGNE
+===================================================== */
+
+function getLineMiddle(latLngs) {
+
+    if (latLngs.length === 1) {
+        return latLngs[0];
+    }
+
+
+    let total = 0;
+
+
+    for (
+        let i = 1;
+        i < latLngs.length;
+        i++
+    ) {
+
+        total +=
+            latLngs[i - 1]
+                .distanceTo(
+                    latLngs[i]
+                );
+
+    }
+
+
+    if (total === 0) {
+        return latLngs[0];
+    }
+
+
+    const target =
+        total / 2;
+
+
+    let accumulated = 0;
+
+
+    for (
+        let i = 1;
+        i < latLngs.length;
+        i++
+    ) {
+
+        const start =
+            latLngs[i - 1];
+
+        const end =
+            latLngs[i];
+
+        const segment =
+            start.distanceTo(end);
+
+
+        if (
+            accumulated +
+            segment >= target
+        ) {
+
+            const ratio =
+                (
+                    target -
+                    accumulated
+                ) /
+                segment;
+
+
+            return L.latLng(
+
+                start.lat +
+                (
+                    end.lat -
+                    start.lat
+                ) *
+                ratio,
+
+                start.lng +
+                (
+                    end.lng -
+                    start.lng
+                ) *
+                ratio
+
+            );
+
+        }
+
+
+        accumulated += segment;
+
+    }
+
+
+    return latLngs[
+        latLngs.length - 1
+    ];
+
+}
+
+
+function createSmallLinePoint(lat, lng) {
+
+    const smallIcon =
+        L.divIcon({
+            className: "small-line-point",
+            html: '<span></span>',
+            iconSize: [10, 10],
+            iconAnchor: [5, 5]
+        });
+
+    const marker = L.marker(
+        [lat, lng],
+        {draggable:true, icon:smallIcon}
+    ).addTo(map);
+    marker.on("dragstart", function(){ if (!undoRestoring) captureUndoState(); });
+    return marker;
+}
+
+
+/* =====================================================
+   AJOUT POINT
+===================================================== */
+
+function addPoint(
+    lineObj,
+    lat,
+    lng,
+    sync = true
+) {
+
+    const marker =
+        createSmallLinePoint(lat, lng);
+
+
+    marker._line =
+        lineObj;
+
+
+    marker.on(
+        "drag",
+        function() {
+
+            update();
+
+            syncToText();
+
+        }
+    );
+
+
+    marker.on(
+        "click",
+        function(e) {
+            e.originalEvent.stopPropagation();
+
+            if (mode === 8) {
+                if (!undoRestoring) captureUndoState();
+                deletePointFromLine(
+                    lineObj,
+                    marker
+                );
+            }
+        }
+    );
+
+    marker.on(
+        "contextmenu",
+        function() {
+
+            if (!undoRestoring) captureUndoState();
+            map.removeLayer(marker);
+
+
+            lineObj.points =
+                lineObj.points.filter(
+                    function(p) {
+                        return p !== marker;
+                    }
+                );
+
+
+            update();
+
+            syncToText();
+
+        }
+    );
+
+
+    lineObj.points.push(marker);
+
+    update();
+
+
+    if (sync) {
+        syncToText();
+    }
+
+}
+
+
+/* =====================================================
+   INSERTION
+===================================================== */
+
+function insertPoint(
+    lineObj,
+    lat,
+    lng,
+    index
+) {
+
+    const marker =
+        createSmallLinePoint(lat, lng);
+
+
+    marker._line =
+        lineObj;
+
+
+    marker.on(
+        "drag",
+        function() {
+
+            update();
+
+            syncToText();
+
+        }
+    );
+
+
+    marker.on(
+        "click",
+        function(e) {
+            e.originalEvent.stopPropagation();
+
+            if (mode === 8) {
+                if (!undoRestoring) captureUndoState();
+                deletePointFromLine(
+                    lineObj,
+                    marker
+                );
+            }
+        }
+    );
+
+    marker.on(
+        "contextmenu",
+        function() {
+
+            if (!undoRestoring) captureUndoState();
+            map.removeLayer(marker);
+
+
+            lineObj.points =
+                lineObj.points.filter(
+                    function(p) {
+                        return p !== marker;
+                    }
+                );
+
+
+            update();
+
+            syncToText();
+
+        }
+    );
+
+
+    lineObj.points.splice(
+        index,
+        0,
+        marker
+    );
+
+
+    update();
+
+    syncToText();
+
+}
+
+
+function deletePointFromLine(
+    lineObj,
+    marker
+) {
+
+    if (!lineObj || !marker) {
+        return;
+    }
+
+    if (lineObj.points.length <= 1) {
+        return;
+    }
+
+    map.removeLayer(marker);
+
+    lineObj.points =
+        lineObj.points.filter(
+            function(point) {
+                return point !== marker;
+            }
+        );
+
+    if (extensionLine === lineObj) {
+        if (lineObj.points.length < 2) {
+            extensionLine = null;
+            extensionEnd = null;
+        }
+    }
+
+    update();
+    syncToText();
+}
+
+
+function mergeTwoLines(firstLine, secondLine) {
+
+    if (!firstLine || !secondLine) {
+        return false;
+    }
+
+    if (firstLine.points.length < 1 ||
+        secondLine.points.length < 1) {
+
+        showModificationInfo(
+            "Impossible de fusionner une ligne vide."
+        );
+
+        return false;
+    }
+
+    const firstPoints =
+        firstLine.points.slice();
+
+    const secondPoints =
+        secondLine.points.slice();
+
+    const firstStart =
+        firstPoints[0].getLatLng();
+
+    const firstEnd =
+        firstPoints[firstPoints.length - 1].getLatLng();
+
+    const secondStart =
+        secondPoints[0].getLatLng();
+
+    const secondEnd =
+        secondPoints[secondPoints.length - 1].getLatLng();
+
+    const possibilities = [
+        {
+            distance: firstEnd.distanceTo(secondStart),
+            first: "normal",
+            second: "normal"
+        },
+        {
+            distance: firstEnd.distanceTo(secondEnd),
+            first: "normal",
+            second: "reverse"
+        },
+        {
+            distance: firstStart.distanceTo(secondStart),
+            first: "reverse",
+            second: "normal"
+        },
+        {
+            distance: firstStart.distanceTo(secondEnd),
+            first: "reverse",
+            second: "reverse"
+        }
+    ];
+
+    possibilities.sort(function(a, b) {
+        return a.distance - b.distance;
+    });
+
+    const best =
+        possibilities[0];
+
+    let orderedFirst =
+        firstPoints.slice();
+
+    let orderedSecond =
+        secondPoints.slice();
+
+    if (best.first === "reverse") {
+        orderedFirst.reverse();
+    }
+
+    if (best.second === "reverse") {
+        orderedSecond.reverse();
+    }
+
+    /*
+     * Si les deux extrémités sont déjà exactement au même endroit,
+     * on évite de créer deux points superposés.
+     */
+    const lastFirst =
+        orderedFirst[
+            orderedFirst.length - 1
+        ].getLatLng();
+
+    const firstSecond =
+        orderedSecond[0].getLatLng();
+
+    const sameEndpoint =
+        lastFirst.distanceTo(firstSecond) < 0.01;
+
+    if (sameEndpoint) {
+        orderedSecond.shift();
+    }
+
+    /*
+     * Retirer la deuxième ligne de la carte.
+     * Ses marqueurs sont conservés car ils vont être réutilisés
+     * dans la première ligne.
+     */
+    if (secondLine.label) {
+        map.removeLayer(secondLine.label);
+        secondLine.label = null;
+    }
+
+    clearLineArrows(secondLine);
+
+    if (secondLine.arrowLayer) {
+        map.removeLayer(secondLine.arrowLayer);
+        secondLine.arrowLayer = null;
+    }
+
+    map.removeLayer(
+        secondLine.polyline
+    );
+
+    /*
+     * Les points de la deuxième ligne deviennent des points
+     * de la première ligne.
+     */
+    firstLine.points =
+        orderedFirst.concat(
+            orderedSecond
+        );
+
+    firstLine.points.forEach(function(marker) {
+        marker._line = firstLine;
+    });
+
+    /*
+     * Supprimer la deuxième ligne de la liste.
+     */
+    lines =
+        lines.filter(function(line) {
+            return line !== secondLine;
+        });
+
+    /*
+     * Reconnecter la polyline et reconstruire les flèches.
+     */
+    firstLine.polyline.setLatLngs(
+        firstLine.points.map(function(marker) {
+            return marker.getLatLng();
+        })
+    );
+
+    updateLineLabel(firstLine);
+
+    activeLine = null;
+    extensionLine = null;
+    extensionEnd = null;
+    splitLineTarget = null;
+
+    showModificationInfo(
+        "Lignes fusionnées : la ligne " +
+        (lines.indexOf(firstLine) + 1) +
+        " contient maintenant les deux lignes."
+    );
+
+    update();
+    syncToText();
+
+    return true;
+}
+
+
+/* =====================================================
+   MODIFICATION DES LIGNES
+===================================================== */
+
+function addPointToExtension(
+    lineObj,
+    lat,
+    lng,
+    end
+) {
+
+    const marker =
+        createSmallLinePoint(lat, lng);
+
+    marker._line = lineObj;
+
+    marker.on(
+        "drag",
+        function() {
+            update();
+            syncToText();
+        }
+    );
+
+    marker.on(
+        "click",
+        function(e) {
+            e.originalEvent.stopPropagation();
+
+            if (mode === 8) {
+                if (!undoRestoring) captureUndoState();
+                deletePointFromLine(
+                    lineObj,
+                    marker
+                );
+            }
+        }
+    );
+
+    marker.on(
+        "contextmenu",
+        function() {
+            map.removeLayer(marker);
+            lineObj.points =
+                lineObj.points.filter(
+                    function(p) {
+                        return p !== marker;
+                    }
+                );
+            update();
+            syncToText();
+        }
+    );
+
+    if (end === "start") {
+        lineObj.points.unshift(marker);
+    } else {
+        lineObj.points.push(marker);
+    }
+
+    activeLine = lineObj;
+
+    update();
+    syncToText();
+}
+
+
+function reverseLine(lineObj) {
+
+    if (!lineObj || lineObj.points.length < 2) {
+        return;
+    }
+
+    lineObj.points.reverse();
+
+    update();
+    syncToText();
+}
+
+
+function splitLineAtClick(lineObj, click) {
+
+    if (!lineObj || lineObj.points.length < 2) {
+        showModificationInfo(
+            "La ligne doit comporter au moins deux points pour pouvoir être coupée."
+        );
+        return false;
+    }
+
+    /*
+     * On travaille uniquement avec les coordonnées de la ligne.
+     * Cela évite de réutiliser les anciens marqueurs Leaflet, qui
+     * pouvaient conserver des références vers la ligne originale.
+     */
+
+    const originalLatLngs = lineObj.points.map(function(marker) {
+        return marker.getLatLng();
+    });
+
+    const clickPx = map.latLngToLayerPoint(click);
+
+    let bestDistance = Infinity;
+    let bestIndex = -1;
+    let bestLatLng = null;
+
+    for (let i = 1; i < originalLatLngs.length; i++) {
+
+        const A = originalLatLngs[i - 1];
+        const B = originalLatLngs[i];
+
+        const Apx = map.latLngToLayerPoint(A);
+        const Bpx = map.latLngToLayerPoint(B);
+
+        const AB = Bpx.subtract(Apx);
+        const AP = clickPx.subtract(Apx);
+
+        const len2 =
+            AB.x * AB.x +
+            AB.y * AB.y;
+
+        let t = 0;
+
+        if (len2 > 0) {
+            t =
+                (
+                    AP.x * AB.x +
+                    AP.y * AB.y
+                ) / len2;
+
+            t = Math.max(
+                0,
+                Math.min(1, t)
+            );
+        }
+
+        const projection =
+            Apx.add(
+                AB.multiplyBy(t)
+            );
+
+        const distance =
+            clickPx.distanceTo(projection);
+
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            bestIndex = i;
+            bestLatLng =
+                map.layerPointToLatLng(
+                    projection
+                );
+        }
+    }
+
+    if (
+        bestIndex < 1 ||
+        !bestLatLng
+    ) {
+        showModificationInfo(
+            "Impossible de déterminer l'endroit de la coupe."
+        );
+        return false;
+    }
+
+    /*
+     * Refuse une coupe trop proche d'une extrémité.
+     */
+    const firstPx =
+        map.latLngToLayerPoint(
+            originalLatLngs[0]
+        );
+
+    const lastPx =
+        map.latLngToLayerPoint(
+            originalLatLngs[
+                originalLatLngs.length - 1
+            ]
+        );
+
+    if (
+        clickPx.distanceTo(firstPx) < 8 ||
+        clickPx.distanceTo(lastPx) < 8
+    ) {
+        showModificationInfo(
+            "Choisissez un point suffisamment éloigné des extrémités de la ligne."
+        );
+        return false;
+    }
+
+    /*
+     * Les deux parties partagent exactement le point de coupe.
+     * Le point est ajouté à chaque partie comme deux marqueurs
+     * totalement indépendants.
+     */
+    const firstPoints = [
+        ...originalLatLngs.slice(
+            0,
+            bestIndex
+        ),
+        bestLatLng
+    ];
+
+    const secondPoints = [
+        bestLatLng,
+        ...originalLatLngs.slice(
+            bestIndex
+        )
+    ];
+
+    if (
+        firstPoints.length < 2 ||
+        secondPoints.length < 2
+    ) {
+        showModificationInfo(
+            "Impossible de couper la ligne à cet endroit."
+        );
+        return false;
+    }
+
+    /*
+     * Suppression complète des anciens marqueurs.
+     * La polyline originale est conservée et devient la première
+     * moitié de la ligne.
+     */
+    lineObj.points.forEach(function(marker) {
+        map.removeLayer(marker);
+    });
+
+    lineObj.points = [];
+
+    /*
+     * Si un ancien label existe, on le retire afin d'éviter
+     * les anciens textes qui resteraient sur la carte.
+     */
+    if (lineObj.label) {
+        map.removeLayer(lineObj.label);
+        lineObj.label = null;
+    }
+
+    /*
+     * La première moitié reste l'objet ligne original.
+     */
+    firstPoints.forEach(function(latlng) {
+        addPoint(
+            lineObj,
+            latlng.lat,
+            latlng.lng,
+            false
+        );
+    });
+
+    /*
+     * La seconde moitié est une véritable nouvelle ligne.
+     */
+    const secondLine =
+        createLine(
+            lineObj.colorName,
+            lineObj.width,
+            lineObj.text1,
+            lineObj.text2
+        );
+
+    // La seconde partie doit être placée immédiatement après la première
+    // dans l'ordre du tableau d'export.
+    const originalLineIndex = lines.indexOf(lineObj);
+    if (originalLineIndex !== -1) {
+        const createdLineIndex = lines.indexOf(secondLine);
+        if (createdLineIndex !== -1) {
+            lines.splice(createdLineIndex, 1);
+            lines.splice(originalLineIndex + 1, 0, secondLine);
+        }
+    }
+
+    /*
+     * createLine() rend temporairement cette ligne active.
+     * On ne veut pas qu'elle devienne la ligne en cours de création.
+     */
+    secondLine.points = [];
+
+    secondPoints.forEach(function(latlng) {
+        addPoint(
+            secondLine,
+            latlng.lat,
+            latlng.lng,
+            false
+        );
+    });
+
+    /*
+     * Garantit les références correctes pour les marqueurs.
+     */
+    lineObj.points.forEach(function(marker) {
+        marker._line = lineObj;
+    });
+
+    secondLine.points.forEach(function(marker) {
+        marker._line = secondLine;
+    });
+
+    activeLine = null;
+    selectedLine = null;
+    extensionLine = null;
+    extensionEnd = null;
+    splitLineTarget = null;
+
+    /*
+     * Reconstruction explicite des deux polylignes.
+     */
+    lineObj.polyline.setLatLngs(
+        lineObj.points.map(function(marker) {
+            return marker.getLatLng();
+        })
+    );
+
+    secondLine.polyline.setLatLngs(
+        secondLine.points.map(function(marker) {
+            return marker.getLatLng();
+        })
+    );
+
+    /*
+     * Mise à jour finale.
+     */
+    update();
+    syncToText();
+
+    showModificationInfo(
+        "Ligne coupée en deux. Les deux parties sont maintenant indépendantes."
+    );
+
+    return true;
+}
+
+function chooseExtensionEnd(lineObj, click) {
+
+    if (!lineObj || lineObj.points.length === 0) {
+        return null;
+    }
+
+    const first =
+        lineObj.points[0].getLatLng();
+
+    const last =
+        lineObj.points[
+            lineObj.points.length - 1
+        ].getLatLng();
+
+    const firstDistance =
+        click.distanceTo(first);
+
+    const lastDistance =
+        click.distanceTo(last);
+
+    return firstDistance <= lastDistance
+        ? "start"
+        : "end";
+}
+
+
+function showModificationInfo(message) {
+
+    const info =
+        document.getElementById(
+            "editInfo"
+        );
+
+    info.style.display = "block";
+    info.innerText = message;
+}
+
+
+/* =====================================================
+   CLIC LIGNE
+===================================================== */
+
+function setupLineClick(lineObj) {
+
+    if (lineObj._clickSetup) {
+        return;
+    }
+
+
+    lineObj._clickSetup = true;
+
+
+    lineObj.polyline.on(
+        "click",
+        function(e) {
+
+            e.originalEvent
+                .stopPropagation();
+
+            // Marque cet événement comme étant le clic de sélection
+            // de l'extrémité. Le gestionnaire de clic de la carte
+            // ne doit surtout pas créer de point avec ce premier clic.
+            e.originalEvent._extensionSelectionClick = true;
+
+            if (mode === 9) {
+
+                // PREMIER CLIC : sélectionner la ligne seulement.
+                if (!splitLineTarget) {
+                    splitLineTarget = lineObj;
+                    selectedLine = lineObj;
+
+                    showModificationInfo(
+                        "Ligne " +
+                        (lines.indexOf(lineObj) + 1) +
+                        " sélectionnée. Cliquez maintenant à l'endroit où vous souhaitez couper la ligne."
+                    );
+
+                    update();
+                    return;
+                }
+
+                // SECOND CLIC : choisir précisément l'endroit de la coupe.
+                if (!undoRestoring) captureUndoState();
+                splitLineAtClick(
+                    splitLineTarget,
+                    e.latlng
+                );
+
+                splitLineTarget = null;
+                return;
+            }
+
+            if (mode === 6) {
+
+                if (lineObj.points.length < 2) {
+                    showModificationInfo(
+                        "Cette ligne doit comporter au moins deux points pour être prolongée."
+                    );
+                    return;
+                }
+
+                // PREMIER CLIC : sélection de la ligne et du côté à prolonger.
+                // Le côté choisi est celui dont l'extrémité est la plus proche
+                // du point où l'utilisateur a cliqué sur la ligne.
+                extensionLine = lineObj;
+                extensionEnd = chooseExtensionEnd(
+                    lineObj,
+                    e.latlng
+                );
+
+                selectedLine = lineObj;
+
+                showModificationInfo(
+                    "Ligne " +
+                    (lines.indexOf(lineObj) + 1) +
+                    " sélectionnée. Côté " +
+                    (extensionEnd === "start" ? "début" : "fin") +
+                    " choisi. Cliquez maintenant sur la carte pour prolonger la ligne."
+                );
+
+                update();
+                return;
+            }
+
+            if (mode === 10) {
+
+                // PREMIER CLIC : sélectionner la première ligne.
+                if (!mergeLineTarget) {
+                    mergeLineTarget = lineObj;
+                    selectedLine = lineObj;
+
+                    showModificationInfo(
+                        "Ligne " +
+                        (lines.indexOf(lineObj) + 1) +
+                        " sélectionnée. Cliquez maintenant sur la deuxième ligne à fusionner."
+                    );
+
+                    update();
+                    return;
+                }
+
+                // Deuxième clic sur la même ligne : on ne fait rien.
+                if (mergeLineTarget === lineObj) {
+                    showModificationInfo(
+                        "Cette ligne est déjà sélectionnée. Cliquez sur une autre ligne."
+                    );
+                    return;
+                }
+
+                const firstLine = mergeLineTarget;
+                const secondLine = lineObj;
+
+                if (!undoRestoring) captureUndoState();
+                const merged =
+                    mergeTwoLines(
+                        firstLine,
+                        secondLine
+                    );
+
+                if (merged) {
+                    mergeLineTarget = null;
+                    selectedLine = null;
+                    update();
+                    syncToText();
+                }
+
+                return;
+            }
+
+            if (mode === 7) {
+                if (!undoRestoring) captureUndoState();
+                reverseLine(lineObj);
+                showModificationInfo(
+                    "Ligne " +
+                    (lines.indexOf(lineObj) + 1) +
+                    " inversée."
+                );
+                return;
+            }
+
+            if (mode === 2) {
+
+                if (
+                    lineObj.points.length < 2
+                ) {
+                    return;
+                }
+
+
+                const click = e.latlng;
+
+                let best = Infinity;
+
+                let index = 0;
+
+
+                for (
+                    let i = 1;
+                    i < lineObj.points.length;
+                    i++
+                ) {
+
+                    const A =
+                        lineObj.points[
+                            i - 1
+                        ].getLatLng();
+
+
+                    const B =
+                        lineObj.points[
+                            i
+                        ].getLatLng();
+
+
+                    const d =
+                        dist(
+                            click,
+                            A,
+                            B
+                        );
+
+
+                    if (d < best) {
+
+                        best = d;
+
+                        index = i;
+
+                    }
+
+                }
+
+
+                if (!undoRestoring) captureUndoState();
+                insertPoint(
+                    lineObj,
+                    click.lat,
+                    click.lng,
+                    index
+                );
+
+
+                return;
+
+            }
+
+
+            if (mode === 3) {
+
+                if (!undoRestoring) captureUndoState();
+                deleteLine(lineObj);
+
+                return;
+
+            }
+
+
+            if (mode === 4) {
+
+                selectLine(lineObj);
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   ÉDITION
+===================================================== */
+
+function selectLine(lineObj) {
+
+    if (selectedLine) {
+
+        selectedLine.polyline
+            .setStyle({
+
+                color:
+                    colors[
+                        selectedLine.colorName
+                    ],
+
+                weight:
+                    selectedLine.width
+
+            });
+
+    }
+
+
+    selectedLine = lineObj;
+
+
+    document.getElementById(
+        "text1Select"
+    ).value =
+        lineObj.text1;
+
+
+    document.getElementById(
+        "text2Select"
+    ).value =
+        lineObj.text2;
+
+
+    document.getElementById(
+        "colorSelect"
+    ).value =
+        lineObj.colorName;
+
+
+    document.getElementById(
+        "widthSelect"
+    ).value =
+        lineObj.width;
+
+
+    lineObj.polyline
+        .setStyle({
+
+            color:
+                colors[
+                    lineObj.colorName
+                ],
+
+            weight:
+                lineObj.width + 3
+
+        });
+
+
+    const info =
+        document.getElementById(
+            "editInfo"
+        );
+
+
+    info.style.display = "block";
+
+
+    info.innerText =
+        "Ligne " +
+        (
+            lines.indexOf(lineObj) + 1
+        ) +
+        " sélectionnée.";
+
+}
+
+
+function deselectLine() {
+
+    if (selectedLine) {
+
+        selectedLine.polyline
+            .setStyle({
+
+                color:
+                    colors[
+                        selectedLine.colorName
+                    ],
+
+                weight:
+                    selectedLine.width
+
+            });
+
+    }
+
+
+    selectedLine = null;
+
+
+    document.getElementById(
+        "editInfo"
+    ).style.display = "none";
+
+}
+
+
+/* =====================================================
+   SUPPRESSION LIGNE
+===================================================== */
+
+function deleteLine(lineObj) {
+
+    lineObj.points.forEach(
+        function(point) {
+
+            map.removeLayer(point);
+
+        }
+    );
+
+
+    if (lineObj.label) {
+        map.removeLayer(lineObj.label);
+    }
+
+    clearLineArrows(lineObj);
+
+    if (lineObj.arrowLayer) {
+        map.removeLayer(lineObj.arrowLayer);
+        lineObj.arrowLayer = null;
+    }
+
+    map.removeLayer(
+        lineObj.polyline
+    );
+
+
+    lines =
+        lines.filter(
+            function(line) {
+                return line !== lineObj;
+            }
+        );
+
+
+    if (activeLine === lineObj) {
+        activeLine = null;
+    }
+
+
+    if (selectedLine === lineObj) {
+        selectedLine = null;
+    }
+
+
+    syncToText();
+
+    update();
+
+}
+
+
+/* =====================================================
+   TEXTES
+===================================================== */
+
+document.getElementById("text1Select").addEventListener("focus", function(){
+    if (!undoRestoring && !undoTextEditing) { captureUndoState(); undoTextEditing=true; }
+});
+document.getElementById("text1Select").addEventListener("blur", function(){ undoTextEditing=false; });
+document
+    .getElementById("text1Select")
+    .addEventListener(
+        "input",
+        function() {
+
+            const line =
+                mode === 4
+                    ? selectedLine
+                    : (mode === 1 ? activeLine : null);
+
+
+            if (!line) {
+                return;
+            }
+
+
+            line.text1 = this.value;
+
+
+            updateLineLabel(line);
+
+            syncToText();
+
+        }
+    );
+
+
+document.getElementById("text2Select").addEventListener("focus", function(){
+    if (!undoRestoring && !undoTextEditing) { captureUndoState(); undoTextEditing=true; }
+});
+document.getElementById("text2Select").addEventListener("blur", function(){ undoTextEditing=false; });
+document
+    .getElementById("text2Select")
+    .addEventListener(
+        "input",
+        function() {
+
+            const line =
+                mode === 4
+                    ? selectedLine
+                    : (mode === 1 ? activeLine : null);
+
+
+            if (!line) {
+                return;
+            }
+
+
+            line.text2 = this.value;
+
+
+            updateLineLabel(line);
+
+            syncToText();
+
+        }
+    );
+
+
+/* =====================================================
+   COULEUR
+===================================================== */
+
+document
+    .getElementById("colorSelect")
+    .addEventListener(
+        "change",
+        function() {
+
+            if (!undoRestoring) captureUndoState();
+
+            const value = this.value;
+
+
+            const line =
+                mode === 4
+                    ? selectedLine
+                    : (mode === 1 ? activeLine : null);
+
+
+            if (!line) {
+                return;
+            }
+
+
+            line.colorName = value;
+
+
+            line.polyline
+                .setStyle({
+
+                    color:
+                        colors[value],
+
+                    weight:
+                        line.width +
+                        (
+                            selectedLine === line
+                                ? 3
+                                : 0
+                        )
+
+                });
+
+
+            syncToText();
+
+        }
+    );
+
+
+/* =====================================================
+   EPAISSEUR
+===================================================== */
+
+document
+    .getElementById("widthSelect")
+    .addEventListener(
+        "change",
+        function() {
+
+            if (!undoRestoring) captureUndoState();
+
+            const width =
+                parseInt(
+                    this.value,
+                    10
+                );
+
+
+            const line =
+                mode === 4
+                    ? selectedLine
+                    : (mode === 1 ? activeLine : null);
+
+
+            if (!line) {
+                return;
+            }
+
+
+            line.width = width;
+
+
+            line.polyline
+                .setStyle({
+
+                    weight:
+                        width +
+                        (
+                            selectedLine === line
+                                ? 3
+                                : 0
+                        )
+
+                });
+
+
+            syncToText();
+
+        }
+    );
+
+
+/* =====================================================
+   POINT UNIQUE
+===================================================== */
+
+function createUniquePoint(
+    lat,
+    lng,
+    text = null
+) {
+
+    if (text === null) {
+
+        text =
+            document.getElementById(
+                "uniqueText"
+            ).value;
+
+    }
+
+
+    const point = {
+
+        lat: lat,
+
+        lng: lng,
+
+        text: text || "",
+
+        marker: null,
+
+        label: null
+
+    };
+
+
+    point.marker =
+        L.marker(
+            [lat, lng],
+            {
+                draggable: true
+            }
+        ).addTo(map);
+
+
+    point.marker._uniquePoint =
+        point;
+
+    point.marker.on("dragstart", function(){ if (!undoRestoring) captureUndoState(); });
+
+    updateUniquePointLabel(point);
+
+
+    point.marker.on(
+        "drag",
+        function(e) {
+
+            const position =
+                e.target.getLatLng();
+
+
+            point.lat =
+                position.lat;
+
+            point.lng =
+                position.lng;
+
+
+            if (point.label) {
+
+                point.label.setLatLng(
+                    position
+                );
+
+            }
+
+
+            syncToText();
+
+        }
+    );
+
+
+    point.marker.on(
+        "contextmenu",
+        function(e) {
+
+            e.originalEvent
+                .preventDefault();
+
+            if (!undoRestoring) captureUndoState();
+            deleteUniquePoint(point);
+
+        }
+    );
+
+
+    uniquePoints.push(point);
+
+
+    setupUniquePointClick(point);
+
+    syncToText();
+
+    update();
+
+
+    return point;
+
+}
+
+
+/* =====================================================
+   LABEL POINT
+===================================================== */
+
+function updateUniquePointLabel(point) {
+
+    if (point.label) {
+
+        map.removeLayer(
+            point.label
+        );
+
+        point.label = null;
+
+    }
+
+
+    if (
+        !point.text ||
+        point.text.trim() === ""
+    ) {
+        return;
+    }
+
+
+    point.label =
+        L.marker(
+            [
+                point.lat,
+                point.lng
+            ],
+            {
+
+                interactive: false,
+
+                icon:
+                    L.divIcon({
+
+                        className:
+                            "unique-label",
+
+                        html:
+                            escapeHtml(
+                                point.text
+                            ),
+
+                        iconSize: null,
+
+                        iconAnchor: [
+                            -8,
+                            8
+                        ]
+
+                    })
+
+            }
+        )
+        .addTo(map);
+
+}
+
+
+/* =====================================================
+   SUPPRESSION POINT
+===================================================== */
+
+function deleteUniquePoint(point) {
+
+    if (!point) {
+        return;
+    }
+
+
+    if (point.marker) {
+        map.removeLayer(point.marker);
+    }
+
+
+    if (point.label) {
+        map.removeLayer(point.label);
+    }
+
+
+    uniquePoints =
+        uniquePoints.filter(
+            function(p) {
+                return p !== point;
+            }
+        );
+
+
+    syncToText();
+
+    update();
+
+}
+
+
+/* =====================================================
+   TEXTE POINT
+===================================================== */
+
+document.getElementById("uniqueText").addEventListener("focus", function(){
+    if (!undoRestoring && !undoTextEditing) { captureUndoState(); undoTextEditing=true; }
+});
+document.getElementById("uniqueText").addEventListener("blur", function(){ undoTextEditing=false; });
+document
+    .getElementById("uniqueText")
+    .addEventListener(
+        "input",
+        function() {
+
+            if (selectedUniquePoint) {
+
+                selectedUniquePoint.text =
+                    this.value;
+
+
+                updateUniquePointLabel(
+                    selectedUniquePoint
+                );
+
+
+                syncToText();
+
+            }
+
+        }
+    );
+
+
+/* =====================================================
+   CLIC POINT
+===================================================== */
+
+function setupUniquePointClick(point) {
+
+    if (point._clickSetup) {
+        return;
+    }
+
+
+    point._clickSetup = true;
+
+
+    point.marker.on(
+        "click",
+        function(e) {
+
+            e.originalEvent
+                .stopPropagation();
+
+
+            if (mode === 4) {
+
+                selectedUniquePoint =
+                    point;
+
+
+                document.getElementById(
+                    "uniqueText"
+                ).value =
+                    point.text;
+
+            }
+
+
+            if (mode === 3) {
+
+                deleteUniquePoint(point);
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   DISTANCE
+===================================================== */
+
+function dist(p, a, b) {
+
+    const A =
+        map.latLngToLayerPoint(a);
+
+    const B =
+        map.latLngToLayerPoint(b);
+
+    const P =
+        map.latLngToLayerPoint(p);
+
+
+    const AB =
+        B.subtract(A);
+
+    const AP =
+        P.subtract(A);
+
+
+    const len2 =
+        AB.x * AB.x +
+        AB.y * AB.y;
+
+
+    if (len2 === 0) {
+        return P.distanceTo(A);
+    }
+
+
+    const t =
+        Math.max(
+            0,
+            Math.min(
+                1,
+                (
+                    AP.x * AB.x +
+                    AP.y * AB.y
+                ) / len2
+            )
+        );
+
+
+    const C =
+        A.add(
+            AB.multiplyBy(t)
+        );
+
+
+    return P.distanceTo(C);
+
+}
+
+
+/* =====================================================
+   EXPORT
+===================================================== */
+
+function syncToText() {
+const exportedPoints = [];
+
+    const exportedLines = [];
+
+
+    uniquePoints.forEach(
+        function(point) {
+
+            const text =
+                point.text &&
+                point.text.trim() !== ""
+                    ? point.text
+                    : " ";
+
+
+            exportedPoints.push(
+
+                point.lat.toFixed(6) +
+                ", " +
+                point.lng.toFixed(6) +
+                "~" +
+                text
+
+            );
+
+        }
+    );
+
+
+    lines
+        .filter(
+            function(line) {
+
+                return line.points.length > 0;
+
+            }
+        )
+        .forEach(
+            function(lineObj) {
+
+                const coordinates =
+                    lineObj.points
+                        .map(
+                            function(point) {
+
+                                const ll =
+                                    point.getLatLng();
+
+
+                                return (
+                                    ll.lat.toFixed(6) +
+                                    ", " +
+                                    ll.lng.toFixed(6)
+                                );
+
+                            }
+                        )
+                        .join(":");
+
+
+                const text1 =
+                    lineObj.text1 &&
+                    lineObj.text1.trim() !== ""
+                        ? lineObj.text1
+                        : " ";
+
+
+                const text2 =
+                    lineObj.text2 &&
+                    lineObj.text2.trim() !== ""
+                        ? lineObj.text2
+                        : " ";
+
+
+                exportedLines.push(
+
+                    coordinates +
+                    "~" +
+                    text1 +
+                    "~" +
+                    text2 +
+                    "~{{" +
+                    lineObj.colorName +
+                    "}}~ ~" +
+                    lineObj.width
+
+                );
+
+            }
+        );
+
+
+    const allElements =
+        exportedPoints.concat(
+            exportedLines
+        );
+
+
+    if (
+        allElements.length === 0
+    ) {
+
+        document.getElementById(
+            "txt"
+        ).value = "";
+
+        return;
+
+    }
+
+
+    if (
+        exportedPoints.length > 0 &&
+        exportedLines.length > 0
+    ) {
+
+        const pointPart =
+            exportedPoints
+                .map(
+                    function(e) {
+                        return e + ";";
+                    }
+                )
+                .join("\n");
+
+
+        const linePart =
+            exportedLines
+                .map(
+                    function(e, i, arr) {
+
+                        return e +
+                            (
+                                i <
+                                arr.length - 1
+                                    ? ";"
+                                    : ""
+                            );
+
+                    }
+                )
+                .join("\n");
+
+
+        document.getElementById(
+            "txt"
+        ).value =
+            pointPart +
+            "\n\n\n" +
+            linePart;
+
+
+        return;
+
+    }
+
+
+    document.getElementById(
+        "txt"
+    ).value =
+        allElements
+            .map(
+                function(e, i, arr) {
+
+                    return e +
+                        (
+                            i <
+                            arr.length - 1
+                                ? ";"
+                                : ""
+                        );
+
+                }
+            )
+            .join("\n");
+
+}
+
+
+/* =====================================================
+   IMPORT LIGNE
+===================================================== */
+
+function parseImportLine(row) {
+
+    row = row.trim();
+
+
+    if (!row) {
+        return null;
+    }
+
+
+    const match =
+        row.match(
+            /^(.+?)~([^~]*)~([^~]*)~\{\{([^}]+)\}\}~[^~]*~(\d+);?$/
+        );
+
+
+    if (!match) {
+        return null;
+    }
+
+
+    const coordinateText =
+        match[1].trim();
+
+
+    const text1 =
+        match[2].replace(/^ +| +$/g, "");
+
+
+    const text2 =
+        match[3].replace(/^ +| +$/g, "");
+
+
+    const colorName =
+        match[4].trim();
+
+
+    const width =
+        parseInt(
+            match[5],
+            10
+        );
+
+
+    if (!colors[colorName]) {
+        return null;
+    }
+
+
+    if (
+        isNaN(width) ||
+        width < 1
+    ) {
+        return null;
+    }
+
+
+    const coordinates = [];
+
+
+    coordinateText
+        .split(":")
+        .forEach(
+            function(coordinate) {
+
+                const parts =
+                    coordinate.split(",");
+
+
+                if (
+                    parts.length !== 2
+                ) {
+                    return;
+                }
+
+
+                const lat =
+                    parseFloat(
+                        parts[0].trim()
+                    );
+
+
+                const lng =
+                    parseFloat(
+                        parts[1].trim()
+                    );
+
+
+                if (
+                    !isNaN(lat) &&
+                    !isNaN(lng) &&
+                    lat >= -90 &&
+                    lat <= 90 &&
+                    lng >= -180 &&
+                    lng <= 180
+                ) {
+
+                    coordinates.push({
+
+                        lat: lat,
+
+                        lng: lng
+
+                    });
+
+                }
+
+            }
+        );
+
+
+    if (
+        coordinates.length === 0
+    ) {
+        return null;
+    }
+
+
+    return {
+
+        type: "line",
+
+        coordinates: coordinates,
+
+        text1: text1,
+
+        text2: text2,
+
+        colorName: colorName,
+
+        width: width
+
+    };
+
+}
+
+
+/* =====================================================
+   IMPORT POINT
+===================================================== */
+
+function parseImportUniquePoint(row) {
+
+    /*
+     * Un point unique est reconnu très simplement :
+     *
+     *     latitude, longitude~texte
+     *
+     * Il suffit donc qu'il y ait :
+     *   - une latitude ;
+     *   - une virgule ;
+     *   - une longitude ;
+     *   - le symbole "~".
+     *
+     * Le texte après "~" peut être quelconque.
+     * Le ";" final est facultatif.
+     *
+     * Cette méthode est volontairement plus souple que l'ancienne :
+     * elle ne cherche pas une chaîne complète avec un format de texte
+     * précis. Elle fonctionne sur le même principe de lecture simple
+     * utilisé pour les coordonnées des lignes.
+     */
+
+    if (row == null) {
+        return null;
+    }
+
+    row =
+        String(row)
+            .replace(/\u00A0/g, " ")
+            .replace(/\u202F/g, " ")
+            .trim();
+
+    if (!row) {
+        return null;
+    }
+
+    /*
+     * On considère le premier "~" comme la séparation entre
+     * les coordonnées et le texte du point.
+     */
+    const separator =
+        row.indexOf("~");
+
+    if (separator === -1) {
+        return null;
+    }
+
+    const coordinates =
+        row.substring(0, separator).trim();
+
+    const text =
+        row
+            .substring(separator + 1)
+            .replace(/;\s*$/, "")
+            .trim();
+
+    /*
+     * Les coordonnées sont recherchées uniquement avant "~".
+     *
+     * Exemples acceptés :
+     *   48.545002,1.908794
+     *   48.545002, 1.908794
+     *   48.545002,   1.908794
+     *   48.545002 , 1.908794
+     */
+    const coordinateMatch =
+        coordinates.match(
+            /^\s*(-?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*(-?(?:\d+(?:\.\d*)?|\.\d+))\s*$/
+        );
+
+    if (!coordinateMatch) {
+        return null;
+    }
+
+    const lat =
+        parseFloat(coordinateMatch[1]);
+
+    const lng =
+        parseFloat(coordinateMatch[2]);
+
+    if (
+        isNaN(lat) ||
+        isNaN(lng) ||
+        lat < -90 ||
+        lat > 90 ||
+        lng < -180 ||
+        lng > 180
+    ) {
+        return null;
+    }
+
+    return {
+        type: "unique",
+        lat: lat,
+        lng: lng,
+        text: text
+    };
+}
+
+
+function importParsedLine(data) {
+
+    const lineObj =
+        createLine(
+            data.colorName,
+            data.width,
+            data.text1,
+            data.text2
+        );
+
+
+    data.coordinates.forEach(
+        function(coordinate) {
+
+            addPoint(
+                lineObj,
+                coordinate.lat,
+                coordinate.lng,
+                false
+            );
+
+        }
+    );
+
+
+    updateLineLabel(lineObj);
+
+    return lineObj;
+
+}
+
+
+/* =====================================================
+   IMPORT POINT
+===================================================== */
+
+function importParsedUniquePoint(data) {
+
+    return createUniquePoint(
+        data.lat,
+        data.lng,
+        data.text
+    );
+
+    undoLastText =
+        document.getElementById("txt").value;
+}
+
+
+/* =====================================================
+   IMPORT GLOBAL
+===================================================== */
+
+function loadFromText() {
+    if (!undoRestoring) captureUndoState();
+
+const raw =
+        document.getElementById(
+            "txt"
+        ).value;
+
+
+    if (!raw.trim()) {
+
+        showImportMessage(
+            "Aucun élément à importer.",
+            false
+        );
+
+        return;
+
+    }
+
+
+    /*
+     * Import : on conserve les sauts de lignes du fichier.
+     *
+     * Les anciens exports utilisent ";" comme séparateur, mais un fichier
+     * peut aussi contenir un élément par ligne. On accepte donc les deux
+     * formats sans supprimer les retours à la ligne présents à l'intérieur
+     * des textes.
+     */
+    const normalizedRaw =
+        raw.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+    // Les fichiers Wikisara placent les points uniques avant "|lines=".
+    // On retire uniquement ce séparateur pour importer correctement les deux parties.
+    const importText =
+        normalizedRaw.replace(/\|lines=/, "\n");
+
+    const rows = [];
+
+    importText
+        .split(";")
+        .forEach(
+            function(chunk) {
+
+                /*
+                 * Si un morceau contient plusieurs lignes, on ne sépare que
+                 * lorsqu'une nouvelle ligne commence clairement un nouvel
+                 * élément (coordonnée de point ou de ligne). Les autres
+                 * retours à la ligne restent donc dans le texte importé.
+                 */
+                const parts =
+                    chunk.split(/\n(?=\s*-?\d+(?:\.\d*)?\s*,\s*-?(?:\d+(?:\.\d*)?|\.\d+)(?:\s*[:~]))/);
+
+                parts.forEach(
+                    function(part) {
+                        if (part.trim() !== "") {
+                            rows.push(part);
+                        }
+                    }
+                );
+            }
+        );
+
+
+    let importedLines = 0;
+
+    let importedPoints = 0;
+
+    let errors = 0;
+
+
+    rows.forEach(
+        function(row) {
+
+            const lineData =
+                parseImportLine(row);
+
+
+            if (lineData) {
+
+                importParsedLine(lineData);
+
+                importedLines++;
+
+                return;
+
+            }
+
+
+            const pointData =
+                parseImportUniquePoint(row);
+
+
+            if (pointData) {
+
+                importParsedUniquePoint(
+                    pointData
+                );
+
+                importedPoints++;
+
+                return;
+
+            }
+
+
+            errors++;
+
+        }
+    );
+
+
+    activeLine = null;
+
+
+    update();
+
+    syncToText();
+
+
+    let message =
+        importedLines +
+        " ligne(s) et " +
+        importedPoints +
+        " point(s) unique(s) importé(s).";
+
+
+    if (errors > 0) {
+
+        message +=
+            " " +
+            errors +
+            " élément(s) ignoré(s).";
+
+    }
+
+
+    showImportMessage(
+        message,
+        errors === 0
+    );
+
+}
+
+
+/* =====================================================
+   MESSAGE IMPORT
+===================================================== */
+
+function showImportMessage(
+    message,
+    success
+) {
+
+    const info =
+        document.getElementById(
+            "importInfo"
+        );
+
+
+    info.style.display = "block";
+
+    info.innerText = message;
+
+    info.style.background =
+        success
+            ? "#e8f8ee"
+            : "#ffe8e8";
+
+
+    setTimeout(
+        function() {
+
+            info.style.display =
+                "none";
+
+        },
+        5000
+    );
+
+}
+
+
+/* =====================================================
+   EFFACER TOUT
+===================================================== */
+
+function clearAll() {
+    if (!undoRestoring) captureUndoState();
+
+lines.forEach(
+        function(lineObj) {
+
+            lineObj.points.forEach(
+                function(point) {
+
+                    map.removeLayer(point);
+
+                }
+            );
+
+
+            if (lineObj.label) {
+
+                map.removeLayer(
+                    lineObj.label
+                );
+
+            }
+
+
+            clearLineArrows(lineObj);
+
+            if (lineObj.arrowLayer) {
+                map.removeLayer(
+                    lineObj.arrowLayer
+                );
+                lineObj.arrowLayer = null;
+            }
+
+            map.removeLayer(
+                lineObj.polyline
+            );
+
+        }
+    );
+
+
+    uniquePoints.forEach(
+        function(point) {
+
+            if (point.marker) {
+
+                map.removeLayer(
+                    point.marker
+                );
+
+            }
+
+
+            if (point.label) {
+
+                map.removeLayer(
+                    point.label
+                );
+
+            }
+
+        }
+    );
+
+
+    lines = [];
+
+    uniquePoints = [];
+
+    activeLine = null;
+
+    selectedLine = null;
+
+    selectedUniquePoint = null;
+
+
+    document.getElementById(
+        "txt"
+    ).value = "";
+
+
+    document.getElementById(
+        "uniqueText"
+    ).value = "";
+
+
+    document.getElementById(
+        "text1Select"
+    ).value = "";
+
+
+    document.getElementById(
+        "text2Select"
+    ).value = "";
+
+
+    deselectLine();
+
+    update();
+    resetWikisaraExport();
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHtml(text) {
+
+    return String(text)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+/* =====================================================
+   MISE À JOUR
+===================================================== */
+
+function update() {
+
+    let totalLinePoints = 0;
+
+    let totalDistance = 0;
+
+
+    lines.forEach(
+        function(lineObj) {
+
+            lineObj.polyline
+                .setLatLngs(
+                    lineObj.points.map(
+                        function(p) {
+                            return p.getLatLng();
+                        }
+                    )
+                );
+
+
+            if (
+                selectedLine !== lineObj
+            ) {
+
+                lineObj.polyline
+                    .setStyle({
+
+                        color:
+                            colors[
+                                lineObj.colorName
+                            ] ||
+                            colors["Rouge"],
+
+                        weight:
+                            lineObj.width ||
+                            5
+
+                    });
+
+            }
+
+
+            updateLineLabel(lineObj);
+
+
+            totalLinePoints +=
+                lineObj.points.length;
+
+
+            for (
+                let i = 1;
+                i < lineObj.points.length;
+                i++
+            ) {
+
+                totalDistance +=
+
+                    lineObj.points[
+                        i - 1
+                    ]
+                    .getLatLng()
+                    .distanceTo(
+                        lineObj.points[i]
+                            .getLatLng()
+                    );
+
+            }
+
+
+            setupLineClick(lineObj);
+
+            updateLineArrows(lineObj);
+
+        }
+    );
+
+
+    uniquePoints.forEach(
+        function(point) {
+
+            if (point.marker) {
+
+                point.marker.setLatLng(
+                    [
+                        point.lat,
+                        point.lng
+                    ]
+                );
+
+            }
+
+
+            if (point.label) {
+
+                point.label.setLatLng(
+                    [
+                        point.lat,
+                        point.lng
+                    ]
+                );
+
+            }
+
+
+            setupUniquePointClick(point);
+
+        }
+    );
+
+
+    const modeText =
+        [
+            "OFF",
+            "AJOUT LIGNE",
+            "INSERTION",
+            "SUPPRESSION",
+            "ÉDITION",
+            "POINT UNIQUE",
+            "PROLONGER LIGNE",
+            "INVERSER SENS LIGNE",
+            "COUPER LIGNE"
+        ][mode];
+
+
+    const activeText =
+        activeLine
+            ? " | Ligne active: " +
+              (
+                  lines.indexOf(
+                      activeLine
+                  ) + 1
+              )
+            : "";
+
+
+    document.getElementById(
+        "info"
+    ).innerText =
+
+        "Lignes: " +
+        lines.length +
+
+        " | Points uniques: " +
+        uniquePoints.length +
+
+        " | Points ligne: " +
+        totalLinePoints +
+
+        " | Distance: " +
+        (
+            totalDistance / 1000
+        ).toFixed(2) +
+
+        " km | Mode: " +
+        modeText +
+
+        activeText +
+
+        " | Fond: " +
+        current;
+
+
+    updateButtons();
+
+}
+
+
+update();
+updateUndoButton();
+
+
+function openHelp() {
+    const overlay = document.getElementById("helpOverlay");
+    if (overlay) overlay.style.display = "flex";
+}
+function closeHelp() {
+    const overlay = document.getElementById("helpOverlay");
+    if (overlay) overlay.style.display = "none";
+}
+function closeHelpFromOverlay(event) {
+    if (event.target && event.target.id === "helpOverlay") closeHelp();
+}
+
+
+const WIK_COLORS = Object.keys(colors);
+
+function openWikisaraExport() {
+    const overlay = document.getElementById("wikExportOverlay");
+    if (!overlay) return;
+    // À chaque ouverture, on recalcule les couleurs réellement utilisées.
+    // Cela permet notamment de supprimer les zones de légende d'une couleur
+    // qui n'est plus utilisée par aucune ligne.
+    populateWikLegends();
+    overlay.style.display = "flex";
+}
+
+function closeWikisaraExport() {
+    const overlay = document.getElementById("wikExportOverlay");
+    if (overlay) overlay.style.display = "none";
+}
+
+function closeWikisaraExportFromOverlay(e) {
+    if (e.target && e.target.id === "wikExportOverlay") {
+        closeWikisaraExport();
+    }
+}
+
+function wikColorName(line) {
+    if (!line || !line.colorName) return "";
+    return line.colorName;
+}
+
+function usedWikColors() {
+    const result = [];
+
+    lines.forEach(function(line) {
+        const color = wikColorName(line);
+
+        if (
+            color &&
+            !result.some(function(item) {
+                return item.toLowerCase() === color.toLowerCase();
+            })
+        ) {
+            result.push(color);
+        }
+    });
+
+    return result;
+}
+
+function createWikLegendRow(colorName) {
+    const row = document.createElement("div");
+    row.className = "wik-export-legend-row";
+
+    const select = document.createElement("select");
+
+    WIK_COLORS.forEach(function(color) {
+        const option = document.createElement("option");
+        option.value = color;
+        option.textContent = color;
+
+        if (color === colorName) {
+            option.selected = true;
+        }
+
+        select.appendChild(option);
+    });
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "Légende pour " + colorName;
+
+    row.appendChild(select);
+    row.appendChild(input);
+
+    return row;
+}
+
+function populateWikLegends() {
+
+    const container =
+        document.getElementById("wikExportLegendRows");
+
+    if (!container) return;
+
+    const usedColors = usedWikColors();
+
+    /*
+     * On supprime les zones de légende dont la couleur n'est plus utilisée
+     * par aucune ligne à cet instant.
+     *
+     * Les zones correspondant aux couleurs encore utilisées sont conservées
+     * afin de ne pas perdre les légendes déjà saisies par l'utilisateur.
+     */
+    Array.from(container.querySelectorAll(".wik-export-legend-row"))
+        .forEach(function(row) {
+            const select = row.querySelector("select");
+
+            if (!select) {
+                row.remove();
+                return;
+            }
+
+            const stillUsed = usedColors.some(function(color) {
+                return color.toLowerCase() ===
+                    select.value.toLowerCase();
+            });
+
+            if (!stillUsed) {
+                row.remove();
+            }
+        });
+
+    /*
+     * On ajoute uniquement les couleurs actuellement utilisées qui ne
+     * possèdent pas encore de zone de légende.
+     */
+    usedColors.forEach(function(color) {
+
+        const exists =
+            Array.from(
+                container.querySelectorAll("select")
+            ).some(function(select) {
+                return (
+                    select.value.toLowerCase() ===
+                    color.toLowerCase()
+                );
+            });
+
+        if (!exists) {
+            container.appendChild(
+                createWikLegendRow(color)
+            );
+        }
+    });
+}
+
+function addWikisaraLegendRow() {
+    const container =
+        document.getElementById("wikExportLegendRows");
+
+    const alreadyUsed =
+        Array.from(
+            container.querySelectorAll("select")
+        ).map(function(select) {
+            return select.value;
+        });
+
+    const available =
+        WIK_COLORS.filter(function(color) {
+            return !alreadyUsed.includes(color);
+        });
+
+    if (available.length === 0) {
+        return;
+    }
+
+    container.appendChild(
+        createWikLegendRow(available[0])
+    );
+}
+
+/*
+ * Les points uniques sont exportés directement depuis uniquePoints,
+ * qui est la structure réellement utilisée par le logiciel.
+ */
+function getWikisaraUniquePointsText() {
+
+    return uniquePoints
+        .map(function(point) {
+
+            const lat =
+                Number(point.lat);
+
+            const lng =
+                Number(point.lng);
+
+            if (
+                !Number.isFinite(lat) ||
+                !Number.isFinite(lng)
+            ) {
+                return null;
+            }
+
+            return (
+                lat.toFixed(6) +
+                ", " +
+                lng.toFixed(6) +
+                "~" +
+                (point.text || "")
+            );
+
+        })
+        .filter(Boolean)
+        .join(";\n");
+}
+
+/*
+ * Export exact des lignes présentes dans la section actuelle.
+ * On reprend les coordonnées, les textes, la couleur et la largeur
+ * stockés dans chaque objet line.
+ */
+function getWikisaraLinesText() {
+
+    return lines
+        .map(function(line) {
+
+            if (
+                !line ||
+                !Array.isArray(line.points) ||
+                line.points.length === 0
+            ) {
+                return null;
+            }
+
+            const coordinates =
+                line.points
+                    .map(function(point) {
+
+                        const position =
+                            point.getLatLng
+                                ? point.getLatLng()
+                                : point;
+
+                        const lat =
+                            Number(position.lat);
+
+                        const lng =
+                            Number(position.lng);
+
+                        if (
+                            !Number.isFinite(lat) ||
+                            !Number.isFinite(lng)
+                        ) {
+                            return null;
+                        }
+
+                        return (
+                            lat.toFixed(6) +
+                            ", " +
+                            lng.toFixed(6)
+                        );
+
+                    })
+                    .filter(Boolean)
+                    .join(":");
+
+            if (!coordinates) {
+                return null;
+            }
+
+            /*
+             * Conserver exactement les espaces autour des "~".
+             * Même lorsqu'un champ est vide, les séparateurs doivent rester
+             * sous la forme "~ ~ ~" comme dans les données d'origine.
+             */
+            return (
+                coordinates +
+                "~ " +
+                (line.text1 || "") +
+                "~ " +
+                (line.text2 || "") +
+                "~{{" +
+                line.colorName +
+                "}}~ ~" +
+                line.width
+            );
+
+        })
+        .filter(Boolean)
+        .join(";\n");
+}
+
+/*
+ * Centre = barycentre de tous les points appartenant aux lignes.
+ */
+/*
+ * Récupère l'ensemble des coordonnées réellement utilisées par l'export.
+ * Les points uniques sont également pris en compte afin que le centre et
+ * le niveau de zoom englobent toute la carte exportée.
+ */
+function getWikisaraPoints() {
+
+    const points = [];
+
+    lines.forEach(function(line) {
+
+        if (!line || !Array.isArray(line.points)) {
+            return;
+        }
+
+        line.points.forEach(function(point) {
+
+            const position =
+                point.getLatLng
+                    ? point.getLatLng()
+                    : point;
+
+            const lat = Number(position.lat);
+            const lng = Number(position.lng);
+
+            if (
+                Number.isFinite(lat) &&
+                Number.isFinite(lng)
+            ) {
+                points.push({
+                    lat: lat,
+                    lng: lng
+                });
+            }
+
+        });
+
+    });
+
+    /*
+     * Les points uniques font partie du contenu exporté : ils doivent donc
+     * participer au calcul de l'emprise de la carte.
+     */
+    uniquePoints.forEach(function(point) {
+
+        const position =
+            point.marker && point.marker.getLatLng
+                ? point.marker.getLatLng()
+                : point;
+
+        const lat = Number(position.lat);
+        const lng = Number(position.lng);
+
+        if (
+            Number.isFinite(lat) &&
+            Number.isFinite(lng)
+        ) {
+            points.push({
+                lat: lat,
+                lng: lng
+            });
+        }
+
+    });
+
+    return points;
+}
+
+/*
+ * Centre Wikisara = centre géographique de l'emprise.
+ *
+ * Longitude :
+ *   (point le plus à l'Ouest + point le plus à l'Est) / 2
+ *
+ * Latitude :
+ *   (point le plus au Sud + point le plus au Nord) / 2
+ *
+ * Cela évite que le centre soit déplacé par un grand nombre de points
+ * concentrés dans une même zone.
+ */
+function getWikisaraCentre() {
+
+    const points = getWikisaraPoints();
+
+    if (points.length === 0) {
+        return {
+            lat: 0,
+            lng: 0
+        };
+    }
+
+    let minLat = 90;
+    let maxLat = -90;
+    let minLng = 180;
+    let maxLng = -180;
+
+    points.forEach(function(p) {
+        minLat = Math.min(minLat, p.lat);
+        maxLat = Math.max(maxLat, p.lat);
+        minLng = Math.min(minLng, p.lng);
+        maxLng = Math.max(maxLng, p.lng);
+    });
+
+    return {
+        lat: (minLat + maxLat) / 2,
+        lng: (minLng + maxLng) / 2
+    };
+}
+
+/*
+ * Zoom calculé automatiquement sur l'emprise réelle de tous les éléments
+ * exportés, en tenant compte des dimensions demandées.
+ *
+ * Le calcul utilise la projection Web Mercator, comme les cartes utilisées
+ * par Wikisara. Une marge de sécurité de 8 % est conservée sur chaque axe.
+ *
+ * Le résultat est compris entre 6 et 18 :
+ * - 6 évite un zoom excessivement éloigné ;
+ * - 18 permet de profiter davantage des dimensions d'une grande carte ;
+ * - pour un seul point (ou des points identiques), un zoom de 15 est retenu.
+ */
+function getWikisaraZoom(width, height) {
+
+    const points = getWikisaraPoints();
+
+    if (points.length < 2) {
+        return 15;
+    }
+
+    let minLat = 90;
+    let maxLat = -90;
+    let minLng = 180;
+    let maxLng = -180;
+
+    points.forEach(function(p) {
+        minLat = Math.min(minLat, p.lat);
+        maxLat = Math.max(maxLat, p.lat);
+        minLng = Math.min(minLng, p.lng);
+        maxLng = Math.max(maxLng, p.lng);
+    });
+
+    const latRange = maxLat - minLat;
+    const lngRange = maxLng - minLng;
+
+    /*
+     * Si tous les points sont identiques, il n'existe pas d'emprise
+     * permettant de déterminer un zoom automatiquement.
+     */
+    if (latRange < 1e-12 && lngRange < 1e-12) {
+        return 15;
+    }
+
+    function mercatorY(lat) {
+
+        const rad =
+            Math.max(
+                -85.05112878,
+                Math.min(85.05112878, lat)
+            ) * Math.PI / 180;
+
+        return (
+            0.5 -
+            Math.log(
+                (1 + Math.sin(rad)) /
+                (1 - Math.sin(rad))
+            ) /
+            (4 * Math.PI)
+        );
+    }
+
+    const xRange =
+        Math.max(
+            lngRange / 360,
+            1e-12
+        );
+
+    const yRange =
+        Math.max(
+            Math.abs(
+                mercatorY(maxLat) -
+                mercatorY(minLat)
+            ),
+            1e-12
+        );
+
+    /*
+     * 92 % de la largeur/hauteur sont utilisables pour l'emprise.
+     * Cela réduit le risque qu'un point touche le bord de la carte,
+     * tout en permettant un zoom plus précis que l'ancien facteur de 85 %.
+     */
+    const usableWidth =
+        Math.max(width * 0.98, 1);
+
+    const usableHeight =
+        Math.max(height * 0.98, 1);
+
+    const MIN_ZOOM = 6;
+    const MAX_ZOOM = 18;
+
+    let zoom = MIN_ZOOM;
+
+    for (let z = MIN_ZOOM; z <= MAX_ZOOM; z++) {
+
+        const world =
+            256 * Math.pow(2, z);
+
+        const requiredWidth =
+            xRange * world;
+
+        const requiredHeight =
+            yRange * world;
+
+        if (
+            requiredWidth <= usableWidth &&
+            requiredHeight <= usableHeight
+        ) {
+            zoom = z;
+        } else {
+            break;
+        }
+    }
+
+    return zoom;
+}
+
+
+function generateWikisaraExport() {
+
+    const width =
+        Math.max(
+            1,
+            parseInt(
+                document.getElementById(
+                    "wikExportWidth"
+                ).value,
+                10
+            ) || 700
+        );
+
+    const height =
+        Math.max(
+            1,
+            parseInt(
+                document.getElementById(
+                    "wikExportHeight"
+                ).value,
+                10
+            ) || 700
+        );
+
+    const uniqueText =
+        getWikisaraUniquePointsText();
+
+    const linesText =
+        getWikisaraLinesText();
+
+    const centre =
+        getWikisaraCentre();
+
+    const zoom =
+        getWikisaraZoom(
+            width,
+            height
+        );
+
+    const legend = [];
+
+    document
+        .querySelectorAll(
+            "#wikExportLegendRows .wik-export-legend-row"
+        )
+        .forEach(function(row) {
+
+            const color =
+                row.querySelector("select");
+
+            const input =
+                row.querySelector("input");
+
+            if (
+                color &&
+                input &&
+                input.value.trim()
+            ) {
+
+                legend.push(
+                    "|" +
+                    color.value +
+                    " = " +
+                    input.value.trim()
+                );
+
+            }
+
+        });
+
+    let output =
+        "{{#display_map:\n";
+
+    if (uniqueText) {
+        output +=
+            uniqueText +
+            "\n";
+    }
+
+    output +=
+        "|lines=" +
+        linesText +
+        "\n";
+
+    output +=
+        "|centre=" +
+        centre.lat.toFixed(6) +
+        ", " +
+        centre.lng.toFixed(6) +
+        "\n";
+
+    output +=
+        "|zoom=" +
+        zoom +
+        "\n";
+
+    output +=
+        "|widht=" +
+        width +
+        "\n";
+
+    output +=
+        "|height=" +
+        height +
+        "\n";
+
+    output +=
+        "|type=hybrid\n";
+
+    output +=
+        "|controls=pan,zoom,streetview,type,scale\n";
+
+    output +=
+        "}}\n\n";
+
+    output +=
+        "{{Légende des cartes\n";
+
+    if (legend.length) {
+        output +=
+            legend.join("\n") +
+            "\n";
+    }
+
+    output +=
+        "}}";
+
+    const outputBox =
+        document.getElementById(
+            "wikExportOutput"
+        );
+
+    outputBox.value =
+        output;
+
+    outputBox.style.display =
+        "block";
+
+    outputBox.focus();
+    outputBox.select();
+}
+
+/*
+ * Actualisation automatique de la liste des couleurs.
+ * Les champs déjà remplis ne sont jamais recréés.
+ */
+(function installWikisaraExportRefresh() {
+
+    if (window.__wikisaraExportRefreshInstalled) return;
+
+    window.__wikisaraExportRefreshInstalled = true;
+
+    setInterval(function() {
+
+        const overlay =
+            document.getElementById("wikExportOverlay");
+
+        if (
+            overlay &&
+            overlay.style.display === "flex"
+        ) {
+            populateWikLegends();
+        }
+
+    }, 500);
+
+})();
+
+</script>
+
+
+<div id="helpOverlay" class="help-overlay" onclick="closeHelpFromOverlay(event)">
+  <div class="help-window" role="dialog" aria-modal="true" aria-labelledby="helpTitle"
+       onclick="event.stopPropagation()">
+    <button type="button" class="help-close" onclick="closeHelp()"
+            aria-label="Fermer l'aide" title="Fermer">×</button>
+
+    <h2 id="helpTitle">Aide</h2>
+
+    <div class="help-section">
+      <h3>1. Importer des données</h3>
+      <p>Collez vos données dans la zone d'importation puis utilisez le bouton <strong>📥 Importer les lignes / points</strong>.</p>
+      <p>Les <strong>points uniques</strong> sont placés avant <code>|lines=</code>.
+      Ils sont reconnus lorsqu'ils comportent une latitude et une longitude suivies de
+      <code>~</code> et du texte du point.</p>
+      <p>Les <strong>lignes</strong> sont placées après <code>|lines=</code>.
+      Les coordonnées successives d'une ligne sont séparées par <code>:</code>.</p>
+      <p>Le <code>;</code> peut séparer les éléments et peut être absent à la fin du dernier élément.</p>
+    </div>
+
+    <div class="help-section">
+      <h3>2. Choisir une couche de données pour le fond de plan</h3>
+      <p>Utilisez le sélecteur de fond de plan pour choisir la couche cartographique
+      affichée derrière vos points et vos lignes.</p>
+    </div>
+
+    <div class="help-section">
+      <h3>3. Fonctions des boutons</h3>
+      <ul>
+        <li>Pour créer une ligne, appuyer sur le bouton <strong>Ajout ligne</strong>. Cela permet de créer une ligne par point successif, lorsque vous voulez arrêter la création de la ligne, il faut cliquer sur le bouton <strong>Ajout ligne</strong> ou cliquer sur le bouton <strong>⏹️ Terminer ligne</strong>. Après avoir fait cela, vous ne pouvez plus modifier les paramètres de la ligne à moins de passer par le bouton <strong> ✏️ Édition</strong>. 
+Vous pouvez déplacer un point unique ou un point d'une ligne en restant appuyé sur le clic gauche une fois au-dessus du point. Un clic droit au-dessus d'un point unique ou d'un point d'une ligne supprimera ce dernier.</li>
+        <li><strong>Insertion</strong> : Permet d'insérer des points sur une ligne existante.</li>
+        <li><strong> 🗑️ Suppression</strong> : Permet de supprimer une ligne ou un point.</li>
+        <li><strong> ✏️ Édition</strong> : Permet d'éditer un point unique ou les paramètres d'une ligne.</li>
+        <li><strong> 📍 Point unique</strong> : Permet de créer un point unique.</li>
+        <li><strong>⏹️ Terminer ligne</strong> : Permet d'arrêter une ligne en cours de création.</li>
+        <li><strong> ➡️ Flèches</strong> : Permet d'afficher le sens de la ligne.</li>
+        <li><strong>➕ Prolonger ligne</strong> : Permet de prolonger une ligne ; la ligne sera prolongée par l'extrémité la plus proche du point cliqué sur la ligne.</li>
+        <li><strong> 🔄 Inverser sens ligne</strong> : Inverse le sens d'une ligne.</li>
+        <li><strong>🗑️ Supprimer points</strong> : Permet de supprimer un point unique ou un point d'une ligne via le clic droit.</li>
+        <li><strong>✂️ Couper ligne</strong> : Coupe une ligne au niveau du clic.</li>
+        <li><strong>🔗 Fusionner lignes</strong> : Ce bouton permet de réunir deux lignes en reprenant les paramètres de la première ligne cliquée. La jonction entre les deux lignes se fera par leurs extrémités les plus proches.</li>
+        <li><strong>🛣️ Itinéraire routier</strong> : Permet de choisir deux points, puis d'ajouter autant de points d'étape que nécessaire pour forcer le parcours à suivre les routes souhaitées. Le calcul ignore les sens uniques. Une fois l'itinéraire satisfaisant, choisissez les paramètres de la ligne avant son intégration aux données.</li>
+        <li><strong>📥 Importer les lignes / points</strong> : Ce bouton permet d'importer des points et des lignes (voir plus de détails en haut de la fenêtre d'aide.</li>
+        <li><strong>🧹 Effacer tout</strong> : Ce bouton permet de remettre à zéro tout.</li>
+        <li><strong>↩️ Annuler</strong> : Ce bouton permet d'annuler l'action précédente (jusqu'à 100 actions annulables).</li>
+        <li><strong>Export Wikisara</strong> : Ce bouton permet d'exporter les données directement sous la forme attendue par Wikisara, pour que cela apparaisse dans les articles. Si vous préférez extraire qu'une partie des données, il est préférable de récupérer les données brutes dans la fenêtre qui s'affiche entre la carte et les boutons de sélection de fond de plan.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div id="routingParamsOverlay" class="help-overlay" onclick="closeRoutingParamsFromOverlay(event)">
+  <div class="help-window" onclick="event.stopPropagation()">
+    <button class="help-close" onclick="closeRoutingParams()" aria-label="Fermer">×</button>
+    <h2>Paramètres de la ligne routière</h2>
+    <p>Choisissez les paramètres à appliquer à l'itinéraire avant de l'intégrer aux données.</p>
+    <div class="routing-row"><label for="routingText1">Texte ligne 1 :</label><input id="routingText1" type="text" placeholder="Texte ligne 1"></div>
+    <div class="routing-row"><label for="routingText2">Texte ligne 2 :</label><input id="routingText2" type="text" placeholder="Texte ligne 2"></div>
+    <div class="routing-row"><label for="routingColor">Couleur :</label><select id="routingColor"></select></div>
+    <div class="routing-row"><label for="routingWidth">Épaisseur :</label><select id="routingWidth"></select></div>
+    <div class="routing-actions">
+      <button onclick="closeRoutingParams()">Annuler</button>
+      <button onclick="createRoutingLineFromPreview()" class="btn-on">✅ Intégrer la ligne</button>
+    </div>
+  </div>
+</div>
+
+<div id="wikExportOverlay" class="wik-export-overlay" onclick="closeWikisaraExportFromOverlay(event)">
+<div class="wik-export-window" onclick="event.stopPropagation()">
+<button class="wik-export-close" onclick="closeWikisaraExport()">×</button>
+<h2>Export Wikisara</h2>
+<h3>Dimensions de la carte</h3>
+<div class="wik-export-field"><label>Largeur (pixels)</label><input id="wikExportWidth" type="number" value="700" min="1"></div>
+<div class="wik-export-field"><label>Hauteur (pixels)</label><input id="wikExportHeight" type="number" value="700" min="1"></div>
+<h3>Légende de la carte</h3>
+<p>Les couleurs utilisées par les lignes actuelles sont proposées. Le bouton <strong>+</strong> permet d'ajouter une autre couleur.</p>
+<div id="wikExportLegendRows"></div>
+<button onclick="addWikisaraLegendRow()">+</button>
+<button onclick="generateWikisaraExport()">Valider / Actualiser</button>
+<textarea id="wikExportOutput" class="wik-export-output" readonly></textarea>
+</div></div><script>
+/* =====================================================
+   ITINÉRAIRE ROUTIER
+   Calcul via Valhalla / OpenStreetMap.
+   Les sens uniques sont explicitement ignorés.
+===================================================== */
+let routingMode = false;
+let routingPoints = [];
+let routingPreview = [];
+let routingPreviewLine = null;
+let routingMarkers = [];
+let routingRequestId = 0;
+let routingParamsOpen = false;
+let routingActionMenu = null;
+let routingMoveIndex = null;
+
+const ROUTING_API = "https://valhalla1.openstreetmap.de";
+const ROUTING_API_FALLBACK = "https://valhalla.openstreetmap.de";
+
+function populateRoutingParameters() {
+    const color = document.getElementById("routingColor");
+    const width = document.getElementById("routingWidth");
+    if (color && color.options.length === 0) {
+        Object.keys(colors).forEach(function(name) {
+            const option = document.createElement("option");
+            option.value = name;
+            option.textContent = name;
+            color.appendChild(option);
+        });
+    }
+    if (width && width.options.length === 0) {
+        for (let i = 1; i <= 10; i++) {
+            const option = document.createElement("option");
+            option.value = String(i);
+            option.textContent = String(i);
+            width.appendChild(option);
+        }
+    }
+    if (color) color.value = document.getElementById("colorSelect").value || "Rouge";
+    if (width) width.value = document.getElementById("widthSelect").value || "5";
+    const t1 = document.getElementById("routingText1");
+    const t2 = document.getElementById("routingText2");
+    if (t1) t1.value = document.getElementById("text1Select").value || "";
+    if (t2) t2.value = document.getElementById("text2Select").value || "";
+}
+
+function setRoutingButtonState(on) {
+    const button = document.getElementById("btnRouting");
+    if (!button) return;
+    button.className = on ? "btn-on" : "btn-off";
+    button.innerText = on ? "🛣️ Itinéraire routier: ON" : "🛣️ Itinéraire routier";
+}
+
+function startRoutingMode() {
+    if (routingMode) { cancelRoutingMode(); return; }
+    routingMode = true;
+    routingPoints = [];
+    routingPreview = [];
+    routingRequestId++;
+    routingParamsOpen = false;
+    activeLine = null; extensionLine = null; extensionEnd = null;
+    splitLineTarget = null; mergeLineTarget = null; selectedLine = null;
+    selectedUniquePoint = null; mode = 0;
+    try { clearRoutingPreview(); } catch (e) {}
+    setRoutingButtonState(true);
+    try { showRoutingValidationButton(false); } catch (e) {}
+    try { closeRoutingParams(); } catch (e) {}
+    try { deselectLine(); } catch (e) {}
+    try { showModificationInfo("Itinéraire routier activé : cliquez sur le premier point, puis sur le deuxième point. Les points peuvent ensuite être ajoutés dans n'importe quel ordre : leur ordre de passage sera optimisé."); } catch (e) {}
+    try { update(); } catch (e) {}
+}
+
+function cancelRoutingMode() {
+    routingMode = false;
+    routingPoints = [];
+    routingPreview = [];
+    routingRequestId++;
+    clearRoutingPreview();
+    closeRoutingParams();
+    setRoutingButtonState(false);
+    showModificationInfo("Itinéraire routier annulé.");
+    update();
+}
+
+function closeRoutingActionMenu() {
+    if (routingActionMenu && routingActionMenu.parentNode) {
+        routingActionMenu.parentNode.removeChild(routingActionMenu);
+    }
+    routingActionMenu = null;
+    routingMoveIndex = null;
+}
+
+function updateRoutingActionMenuPosition() {
+    if (!routingActionMenu || routingMoveIndex === null || !routingPoints[routingMoveIndex]) return;
+
+    const p = routingPoints[routingMoveIndex];
+    const pt = map.latLngToContainerPoint([p.lat, p.lng]);
+    const container = map.getContainer();
+    const margin = 4;
+    const gap = 5;
+    const menuWidth = routingActionMenu.offsetWidth || 80;
+    const menuHeight = routingActionMenu.offsetHeight || 60;
+
+    // Positionnement réellement proche du point : les deux actions sont
+    // affichées juste à droite du point, ou juste à gauche s'il n'y a pas
+    // assez de place à droite.
+    let left = pt.x + gap;
+    let top = pt.y - menuHeight / 2;
+
+    if (left + menuWidth > container.clientWidth - margin) {
+        left = pt.x - gap - menuWidth;
+    }
+
+    if (left < margin) {
+        left = Math.max(margin, Math.min(pt.x + gap, container.clientWidth - margin - menuWidth));
+    }
+
+    top = Math.max(margin, Math.min(top, container.clientHeight - margin - menuHeight));
+
+    routingActionMenu.style.left = Math.round(left) + "px";
+    routingActionMenu.style.top = Math.round(top) + "px";
+    routingActionMenu.style.transform = "none";
+}
+function openRoutingActionMenu(index) {
+    if (index <= 0 || index >= routingPoints.length - 1) return;
+    closeRoutingActionMenu();
+
+    // Mémoriser immédiatement le point sélectionné pour que le menu soit
+    // positionné au voisinage exact de ce point dès son apparition.
+    routingMoveIndex = index;
+    routingMoving = false;
+
+    const menu = document.createElement("div");
+    menu.className = "routing-action-menu";
+    menu.style.cssText = [
+        "position:absolute",
+        "z-index:10000",
+        "display:flex",
+        "flex-direction:column",
+        "gap:3px",
+        "transform:translate(12px,-50%)",
+        "pointer-events:auto",
+        "white-space:nowrap"
+    ].join(";");
+
+    const move = document.createElement("button");
+    move.type = "button";
+    move.textContent = "Déplacer";
+    move.style.cssText = "padding:3px 6px;font-size:11px;border:1px solid #888;border-radius:4px;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25);";
+    move.addEventListener("click", function(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        routingMoveIndex = index;
+        if (routingActionMenu) {
+            routingActionMenu.innerHTML = "";
+            const info = document.createElement("div");
+            info.textContent = "Cliquez sur la nouvelle position";
+            info.style.cssText = "padding:5px 7px;font-size:12px;background:#fff;border:1px solid #888;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.25);";
+            routingActionMenu.appendChild(info);
+        }
+        showModificationInfo("Déplacement de l'étape " + index + " : cliquez sur sa nouvelle position.");
+    });
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "Supprimer";
+    remove.style.cssText = "padding:3px 6px;font-size:11px;border:1px solid #b71c1c;border-radius:4px;background:#fff;color:#b71c1c;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25);";
+    remove.addEventListener("click", function(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (routingPoints[index]) {
+            routingPoints.splice(index, 1);
+            closeRoutingActionMenu();
+            drawRoutingMarkers();
+            calculateRoutingPreview();
+        }
+    });
+
+    menu.appendChild(move);
+    menu.appendChild(remove);
+
+    const mapContainer = map.getContainer();
+    if (getComputedStyle(mapContainer).position === "static") mapContainer.style.position = "relative";
+    mapContainer.appendChild(menu);
+    routingActionMenu = menu;
+    updateRoutingActionMenuPosition();
+}
+
+// Les fenêtres restent attachées au point lors d'un déplacement ou d'un zoom.
+if (typeof map !== "undefined" && map) {
+    map.on("move zoom", updateRoutingActionMenuPosition);
+}
+
+function deleteRoutingWaypoint(index) {
+    if (index <= 0 || index >= routingPoints.length - 1) return;
+    closeRoutingActionMenu();
+    routingPoints.splice(index, 1);
+    drawRoutingMarkers();
+    calculateRoutingPreview();
+}
+
+function clearRoutingPreview() {
+    closeRoutingActionMenu();
+    routingMarkers.forEach(function(marker) { if (marker && map.hasLayer(marker)) map.removeLayer(marker); });
+    routingMarkers = [];
+    if (routingPreviewLine && map.hasLayer(routingPreviewLine)) map.removeLayer(routingPreviewLine);
+    routingPreviewLine = null;
+}
+
+function drawRoutingMarkers() {
+    closeRoutingActionMenu();
+    routingMarkers.forEach(function(marker) { if (marker && map.hasLayer(marker)) map.removeLayer(marker); });
+    routingMarkers = [];
+    routingPoints.forEach(function(p, index) {
+        const isStart = index === 0, isEnd = index === routingPoints.length - 1;
+        const marker = L.circleMarker([p.lat, p.lng], {
+            radius: isStart || isEnd ? 8 : 7,
+            color: isStart ? "#1b5e20" : (isEnd ? "#b71c1c" : "#e65100"),
+            fillColor: isStart ? "#4caf50" : (isEnd ? "#f44336" : "#ff9800"),
+            fillOpacity: 1, weight: 2, bubblingMouseEvents: false
+        }).addTo(map);
+
+        if (isStart) {
+            marker.bindTooltip("Départ", {permanent:false});
+        } else if (isEnd) {
+            marker.bindTooltip("Arrivée", {permanent:false});
+        } else {
+            marker.bindTooltip("Étape " + index, {permanent:false});
+            marker.on("click", function(ev) {
+                if (ev.originalEvent) {
+                    ev.originalEvent.preventDefault();
+                    ev.originalEvent.stopPropagation();
+                }
+                openRoutingActionMenu(index);
+            });
+            marker.on("contextmenu", function(ev) {
+                if (ev.originalEvent) {
+                    ev.originalEvent.preventDefault();
+                    ev.originalEvent.stopPropagation();
+                }
+                deleteRoutingWaypoint(index);
+            });
+        }
+        routingMarkers.push(marker);
+    });
+}
+
+function handleRoutingMapClick(e) {
+    if (!routingMode) return;
+
+    // Un clic ailleurs ferme le menu. S'il ne s'agit pas d'un déplacement,
+    // il ne doit pas simultanément créer une nouvelle étape.
+    if (routingActionMenu) {
+        if (routingMoveIndex !== null) {
+            const index = routingMoveIndex;
+            const point = { lat: Number(e.latlng.lat), lng: Number(e.latlng.lng) };
+            closeRoutingActionMenu();
+            if (index > 0 && index < routingPoints.length - 1) {
+                routingPoints[index] = point;
+                drawRoutingMarkers();
+                calculateRoutingPreview();
+            }
+        } else {
+            closeRoutingActionMenu();
+        }
+        return;
+    }
+
+    const point = { lat: Number(e.latlng.lat), lng: Number(e.latlng.lng) };
+
+    // 1er clic : départ
+    if (routingPoints.length === 0) {
+        routingPoints.push(point);
+        drawRoutingMarkers();
+        showModificationInfo("Départ placé. Cliquez sur la carte pour placer le point d'arrivée.");
+        return;
+    }
+
+    // 2e clic : arrivée
+    if (routingPoints.length === 1) {
+        routingPoints.push(point);
+        drawRoutingMarkers();
+        calculateRoutingPreview();
+        return;
+    }
+
+    // Clics suivants : point d'étape.
+    routingPoints.splice(routingPoints.length - 1, 0, point);
+    drawRoutingMarkers();
+    calculateRoutingPreview();
+}
+
+function decodePolyline6(str) {
+    let index = 0, lat = 0, lng = 0;
+    const coordinates = [], factor = 1000000;
+    while (index < str.length) {
+        let shift = 0, result = 0, byte;
+        do { byte = str.charCodeAt(index++) - 63; result |= (byte & 31) << shift; shift += 5; } while (byte >= 32);
+        const dlat = (result & 1) ? ~(result >> 1) : (result >> 1);
+        shift = 0; result = 0;
+        do { byte = str.charCodeAt(index++) - 63; result |= (byte & 31) << shift; shift += 5; } while (byte >= 32);
+        const dlng = (result & 1) ? ~(result >> 1) : (result >> 1);
+        lat += dlat; lng += dlng; coordinates.push([lat / factor, lng / factor]);
+    }
+    return coordinates;
+}
+
+function dedupeLatLngs(points) {
+    const out = [];
+    points.forEach(function(p) {
+        if (!p || p.length < 2) return;
+        if (!out.length || Math.abs(out[out.length-1][0]-p[0]) > 1e-10 || Math.abs(out[out.length-1][1]-p[1]) > 1e-10) out.push(p);
+    });
+    return out;
+}
+
+function simplifyRouteGeometry(points, toleranceMeters) {
+    if (!Array.isArray(points) || points.length <= 2) return points || [];
+    const tolerance = Number(toleranceMeters) || 5;
+    const refLat = points.reduce((sum,p)=>sum+Number(p[0]),0)/points.length;
+    const latScale=111320, lonScale=111320*Math.cos(refLat*Math.PI/180);
+    const projected=points.map(p=>({x:Number(p[1])*lonScale,y:Number(p[0])*latScale}));
+    function perpendicularDistance(point,a,b){
+        const dx=b.x-a.x,dy=b.y-a.y;
+        if(dx===0&&dy===0)return Math.hypot(point.x-a.x,point.y-a.y);
+        const t=((point.x-a.x)*dx+(point.y-a.y)*dy)/(dx*dx+dy*dy),c=Math.max(0,Math.min(1,t));
+        return Math.hypot(point.x-(a.x+c*dx),point.y-(a.y+c*dy));
+    }
+    function rdp(arr,first,last,keep){
+        let maxDistance=tolerance,index=-1;
+        for(let i=first+1;i<last;i++){const d=perpendicularDistance(arr[i],arr[first],arr[last]);if(d>maxDistance){maxDistance=d;index=i;}}
+        if(index!==-1){keep[index]=true;rdp(arr,first,index,keep);rdp(arr,index,last,keep);}
+    }
+    const keep=new Array(projected.length).fill(false);keep[0]=true;keep[projected.length-1]=true;rdp(projected,0,projected.length-1,keep);
+    return points.filter((_,i)=>keep[i]);
+}
+
+async function requestRouting(endpoint, payload) {
+    const controller = new AbortController();
+    const timeout = setTimeout(()=>controller.abort(),60000);
+    try {
+        const response = await fetch(endpoint,{method:"POST",mode:"cors",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload),signal:controller.signal});
+        const text=await response.text();
+        if(!response.ok) throw new Error("HTTP "+response.status+(text?" — "+text.slice(0,300):""));
+        try{return JSON.parse(text);}catch(e){throw new Error("Réponse JSON invalide du service Valhalla");}
+    } finally { clearTimeout(timeout); }
+}
+
+function extractRoutingGeometry(data) {
+    const trip=data && data.trip;
+    if(!trip || !Array.isArray(trip.legs)) return [];
+    let all=[];
+    trip.legs.forEach(function(leg){
+        if(!leg || !leg.shape)return;
+        const pts=decodePolyline6(leg.shape);
+        all=all.concat(pts);
+    });
+    return dedupeLatLngs(all);
+}
+
+function valhallaPayload(points, optimized) {
+    return {
+        locations: points.map(function(p){ return {lat:Number(p.lat),lon:Number(p.lng),type:"break"}; }),
+        costing:"auto",
+        units:"kilometers",
+        costing_options:{
+            auto:{
+                // Le logiciel sert à reconstituer les itinéraires historiques/cartographiques :
+                // on veut pouvoir traverser un sens unique dans le sens demandé par les points.
+                ignore_oneways:true
+            }
+        }
+    };
+}
+
+async function getRoutingResultForPoints(points) {
+    if(!points || points.length<2)return null;
+    const payload=valhallaPayload(points,false);
+    return await requestRouting(ROUTING_API+"/route",payload);
+}
+
+async function optimizeRoutingWaypoints(points, requestId) {
+    if (!points || points.length < 2) return null;
+
+    // Avec 0 ou 1 étape, l'ordre est déjà imposé.
+    if (points.length <= 3) {
+        return {points: points.slice(), data: await getRoutingResultForPoints(points)};
+    }
+
+    if (requestId !== routingRequestId || !routingMode) return null;
+
+    // On utilise la matrice Valhalla plutôt que /optimized_route.
+    // Cela évite les problèmes rencontrés avec le service public optimized_route
+    // et permet de maîtriser nous-mêmes l'ordre optimal des étapes.
+    const locations = points.map(function(p) {
+        return {lat:Number(p.lat), lon:Number(p.lng)};
+    });
+
+    const matrixPayload = {
+        sources: locations,
+        targets: locations,
+        costing: "auto",
+        units: "kilometers",
+        costing_options: {
+            auto: {
+                ignore_oneways: true
+            }
+        }
+    };
+
+    const matrixData = await requestRouting(
+        ROUTING_API + "/sources_to_targets",
+        matrixPayload
+    );
+
+    if (requestId !== routingRequestId || !routingMode) return null;
+
+    const matrix = Array.from({length: points.length}, () =>
+        Array(points.length).fill(Infinity)
+    );
+
+    const entries =
+        Array.isArray(matrixData.sources_to_targets)
+            ? matrixData.sources_to_targets
+            : [];
+
+    entries.forEach(function(entry) {
+        const i = Number(entry.from_index);
+        const j = Number(entry.to_index);
+        if (!Number.isInteger(i) || !Number.isInteger(j)) return;
+
+        // Priorité au temps de trajet, puis à la distance.
+        const cost = Number.isFinite(Number(entry.time))
+            ? Number(entry.time)
+            : Number(entry.distance);
+
+        if (Number.isFinite(cost)) matrix[i][j] = cost;
+    });
+
+    // Certaines versions de Valhalla renvoient les matrices sous forme
+    // de tableaux imbriqués.
+    if (Array.isArray(matrixData.sources_to_targets) &&
+        Array.isArray(matrixData.sources_to_targets[0])) {
+        matrixData.sources_to_targets.forEach(function(row, i) {
+            row.forEach(function(entry, j) {
+                const cost = Number.isFinite(Number(entry.time))
+                    ? Number(entry.time)
+                    : Number(entry.distance);
+                if (Number.isFinite(cost)) matrix[i][j] = cost;
+            });
+        });
+    }
+
+    // Fallback si le serveur ne fournit pas from_index/to_index :
+    // certains déploiements renvoient directement des lignes de résultats.
+    if (!matrix.some(function(row) {
+        return row.some(function(v) { return Number.isFinite(v); });
+    })) {
+        throw new Error("Valhalla n'a pas retourné de matrice de temps/distances exploitable.");
+    }
+
+    const n = points.length;
+    const startIndex = 0;
+    const endIndex = n - 1;
+    const middle = [];
+    for (let i = 1; i < endIndex; i++) middle.push(i);
+
+    // Recherche exacte pour un nombre raisonnable d'étapes.
+    // Au-delà, on part d'un plus proche voisin puis on améliore par 2-opt.
+    let bestOrder = null;
+    let bestCost = Infinity;
+
+    function routeCost(order) {
+        let cost = 0;
+        for (let i = 0; i < order.length - 1; i++) {
+            const c = matrix[order[i]][order[i + 1]];
+            if (!Number.isFinite(c)) return Infinity;
+            cost += c;
+        }
+        return cost;
+    }
+
+    if (middle.length <= 8) {
+        function permute(arr, prefix) {
+            if (arr.length === 0) {
+                const order = [startIndex].concat(prefix, [endIndex]);
+                const cost = routeCost(order);
+                if (cost < bestCost) {
+                    bestCost = cost;
+                    bestOrder = order;
+                }
+                return;
+            }
+            for (let i = 0; i < arr.length; i++) {
+                permute(
+                    arr.slice(0, i).concat(arr.slice(i + 1)),
+                    prefix.concat(arr[i])
+                );
+            }
+        }
+        permute(middle, []);
+    } else {
+        const remaining = middle.slice();
+        const order = [startIndex];
+        let current = startIndex;
+
+        while (remaining.length) {
+            let best = -1;
+            let bestEdge = Infinity;
+            remaining.forEach(function(candidate) {
+                if (matrix[current][candidate] < bestEdge) {
+                    bestEdge = matrix[current][candidate];
+                    best = candidate;
+                }
+            });
+            if (best < 0 || !Number.isFinite(bestEdge)) break;
+            order.push(best);
+            remaining.splice(remaining.indexOf(best), 1);
+            current = best;
+        }
+        order.push(endIndex);
+
+        // 2-opt sur les étapes intermédiaires.
+        let improved = true;
+        while (improved) {
+            improved = false;
+            for (let i = 1; i < order.length - 2; i++) {
+                for (let k = i + 1; k < order.length - 1; k++) {
+                    const candidate = order.slice();
+                    const reversed = candidate.slice(i, k + 1).reverse();
+                    candidate.splice(i, k - i + 1, ...reversed);
+                    if (routeCost(candidate) < routeCost(order)) {
+                        order.splice(0, order.length, ...candidate);
+                        improved = true;
+                    }
+                }
+            }
+        }
+        bestOrder = order;
+        bestCost = routeCost(order);
+    }
+
+    if (!bestOrder || !Number.isFinite(bestCost)) {
+        throw new Error("Impossible de trouver un ordre routable pour tous les points d'étape.");
+    }
+
+    const orderedPoints = bestOrder.map(function(index) {
+        return points[index];
+    });
+
+    // Le tracé final est toujours calculé par /route avec l'ordre optimisé.
+    const data = await getRoutingResultForPoints(orderedPoints);
+
+    if (requestId !== routingRequestId || !routingMode) return null;
+
+    return {points: orderedPoints, data: data};
+}
+async function calculateRoutingPreview() {
+    if (routingPoints.length < 2) return;
+    const requestId = ++routingRequestId;
+    const originalPointCount = routingPoints.length;
+
+    try {
+        showModificationInfo(originalPointCount <= 3
+            ? "Calcul de l'itinéraire en cours…"
+            : "Recherche du meilleur ordre des points d'étape et recalcul de l'itinéraire…");
+
+        const optimized = await optimizeRoutingWaypoints(routingPoints, requestId);
+        if (!optimized || requestId !== routingRequestId || !routingMode) return;
+        if (!optimized.data) throw new Error("Aucun itinéraire n'a été retourné par l'IGN.");
+
+        // L'ordre des points d'étape est désormais celui trouvé par l'optimisation.
+        routingPoints = optimized.points;
+        drawRoutingMarkers();
+
+        let geometry = extractRoutingGeometry(optimized.data);
+        geometry = dedupeLatLngs(geometry);
+        if (geometry.length < 2) throw new Error("Aucun tracé routier n'a été retourné par l'IGN.");
+
+        const originalCount = geometry.length;
+        geometry = simplifyRouteGeometry(geometry, 5);
+        routingPreview = geometry.map(function(p) { return {lat:p[0], lng:p[1]}; });
+
+        if (routingPreviewLine && map.hasLayer(routingPreviewLine)) map.removeLayer(routingPreviewLine);
+        routingPreviewLine = L.polyline(routingPreview, {
+            color: "#1976d2", weight: 5, opacity: 0.9,
+            dashArray: "10 7", interactive: false
+        }).addTo(map);
+
+        let distanceKm = Number(optimized.data.distance);
+        if (!Number.isFinite(distanceKm) && optimized.data.route) distanceKm = Number(optimized.data.route.distance);
+        const distanceText = Number.isFinite(distanceKm) ? " Distance : " + distanceKm.toFixed(2) + " km." : "";
+        const reductionText = originalCount > geometry.length
+            ? " " + originalCount + " points routiers ramenés à " + geometry.length + " points nécessaires."
+            : "";
+
+        if (routingPoints.length === 2) {
+            showModificationInfo("Itinéraire calculé." + distanceText + reductionText + " Cliquez sur la carte pour ajouter un point d'étape si vous souhaitez forcer le parcours. Lorsque le tracé vous convient, cliquez sur « Valider ».");
+        } else {
+            showModificationInfo("Itinéraire optimisé avec " + (routingPoints.length - 2) + " point(s) d'étape. Leur ordre a été automatiquement optimisé pour obtenir le trajet le plus court/rapide trouvé sur le réseau routier IGN." + distanceText + reductionText + " Cliquez sur la carte pour ajouter une étape ou validez l'itinéraire.");
+        }
+        showRoutingValidationButton(true);
+    } catch (error) {
+        if (requestId !== routingRequestId || !routingMode) return;
+        showModificationInfo("Impossible de calculer l'itinéraire : " + (error && error.message ? error.message : error) + ". Aucun changement n'a été apporté à vos données.");
+        showRoutingValidationButton(false);
+    }
+}
+
+function showRoutingValidationButton(show) {
+    const button = document.getElementById("btnValidateRouting");
+    if (!button) return;
+    button.style.display = show ? "inline-block" : "none";
+    button.className = show ? "btn-on" : "btn-off";
+    button.innerText = "Valider";
+}
+
+function openRoutingParams() {
+    // Cette fenêtre n'est accessible que depuis le bouton Valider, après un tracé calculé.
+    if (!routingMode || routingPreview.length < 2) return;
+    populateRoutingParameters();
+    routingParamsOpen = true;
+    document.getElementById("routingParamsOverlay").style.display = "flex";
+}
+
+function closeRoutingParams() {
+    routingParamsOpen = false;
+    const overlay = document.getElementById("routingParamsOverlay");
+    if (overlay) overlay.style.display = "none";
+}
+
+function closeRoutingParamsFromOverlay(event) {
+    if (event && event.target === event.currentTarget) closeRoutingParams();
+}
+
+function createRoutingLineFromPreview() {
+    if (!routingMode || routingPreview.length < 2) return;
+
+    const text1 = document.getElementById("routingText1").value || "";
+    const text2 = document.getElementById("routingText2").value || "";
+    const colorName = document.getElementById("routingColor").value || "Rouge";
+    const width = Number(document.getElementById("routingWidth").value) || 5;
+
+    if (!undoRestoring) captureUndoState();
+
+    const lineObj = createLine(colorName, width, text1, text2);
+    routingPreview.forEach(function(p) {
+        addPoint(lineObj, p.lat, p.lng, false);
+    });
+
+    activeLine = null;
+    updateLineLabel(lineObj);
+    syncToText();
+    update();
+
+    closeRoutingParams();
+    routingMode = false;
+    routingPoints = [];
+    routingPreview = [];
+    routingRequestId++;
+    clearRoutingPreview();
+    setRoutingButtonState(false);
+    showRoutingValidationButton(false);
+    showModificationInfo("Itinéraire routier intégré comme une nouvelle ligne avec les paramètres choisis.");
+    update();
+}
+
+
+// Le bouton de validation est masqué tant qu'aucun itinéraire valide n'existe.
+showRoutingValidationButton(false);
+
+// Sécurise l’activation du mode itinéraire : le bouton reste fonctionnel
+// même si le navigateur ne résout pas correctement l’attribut onclick.
+window.startRoutingMode = startRoutingMode;
+window.cancelRoutingMode = cancelRoutingMode;
+window.openRoutingParams = openRoutingParams;
+
+// Repositionne les deux mini-fenêtres si la carte est déplacée ou zoomée.
+map.on("move zoom", function() {
+    updateRoutingActionMenuPosition();
+});
+(function() {
+    const routingButton = document.getElementById("btnRouting");
+    if (routingButton) {
+        routingButton.type = "button";
+        routingButton.onclick = function(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            startRoutingMode();
+            return false;
+        };
+    }
+})();
+</script>
+
+</body>
+</html>
